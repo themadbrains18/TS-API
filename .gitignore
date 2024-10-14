@@ -1,0 +1,17 @@
+# Node
+node_modules/
+dist/
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Prisma
+prisma/migrations/
+
+# Others
+.DS_Store

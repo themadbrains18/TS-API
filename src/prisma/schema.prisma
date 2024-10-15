@@ -76,6 +76,7 @@ model Template {
   sourceFiles   SourceFile[] // Required array of source files for the template
   sliderImages  SliderImage[] // Required array of slider images for showcasing the template
   previewImages PreviewImage[] // Required array of preview images for the template
+  previewMobileImages PreviewMobileImage[] // Required array of preview images for the template
 
   seoTags Json // SEO tags for the template
   isPaid  Boolean @default(false) // Whether the template is free or paid
@@ -116,6 +117,12 @@ model SliderImage {
 }
 
 model PreviewImage {
+  id         String   @id @default(cuid())
+  imageUrl   String   @db.Text
+  template   Template @relation(fields: [templateId], references: [id])
+  templateId String
+}
+model PreviewMobileImage {
   id         String   @id @default(cuid())
   imageUrl   String   @db.Text
   template   Template @relation(fields: [templateId], references: [id])

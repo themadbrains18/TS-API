@@ -36,6 +36,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     // Initialize empty arrays for the uploaded URLs
     let sliderImageUrls: string[] = [];
     let previewImageUrls: string[] = [];
+    let previewMobileImageUrls: string[] = [];
     let sourceFileUrls: string[] = [];
 
     // Check if req.files is an array or an object with named fields
@@ -49,6 +50,9 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       }
       if (req.files.previewImages) {
         previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
+      }
+      if (req.files.previewMobileImages) {
+        previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
       }
       if (req.files.sourceFiles) {
         sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
@@ -83,6 +87,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         credits: true,
         sliderImages: true,
         previewImages: true,
+        previewMobileImages: true,
         sourceFiles: true,
       },
     });
@@ -91,6 +96,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     await Promise.all([
       ...sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
       ...previewImageUrls.map(url => prisma.previewImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
+      ...previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
       ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
     ]);
 
@@ -120,6 +126,7 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
     await Promise.all([
       prisma.sliderImage.deleteMany({ where: { templateId: id } }),
       prisma.previewImage.deleteMany({ where: { templateId: id } }),
+      prisma.previewMobileImage.deleteMany({ where: { templateId: id } }),
       prisma.sourceFile.deleteMany({ where: { templateId: id } }),
     ]);
 
@@ -139,6 +146,7 @@ export async function getTemplates(req: Request, res: Response) {
         credits: true,
         sliderImages: true,
         previewImages: true,
+        previewMobileImages: true,
         sourceFiles: true,
       },
     });
@@ -161,6 +169,7 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
           credits: true,
           sliderImages: true,
           previewImages: true,
+          previewMobileImages: true,
           sourceFiles: true,
         },
       }
@@ -183,6 +192,7 @@ export async function getTemplateById(req: Request, res: Response) {
         credits: true,
         sliderImages: true,
         previewImages: true,
+        previewMobileImages: true,
         sourceFiles: true,
       },
     });
@@ -208,6 +218,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       include: {
         sliderImages: true,
         previewImages: true,
+        previewMobileImages: true,
         sourceFiles: true,
         credits: true,
       },
@@ -235,6 +246,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
     // Initialize empty arrays for the uploaded URLs
     let sliderImageUrls: string[] = [];
     let previewImageUrls: string[] = [];
+    let previewMobileImageUrls: string[] = [];
     let sourceFileUrls: string[] = [];
 
     // Check if req.files is an array or an object with named fields
@@ -246,6 +258,9 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       }
       if (req.files.previewImages) {
         previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
+      }
+      if (req.files.previewImagesMobile) {
+        previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
       }
       if (req.files.sourceFiles) {
         sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
@@ -292,6 +307,10 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
     if (previewImageUrls.length) {
       await prisma.previewImage.deleteMany({ where: { templateId: id } });
       await Promise.all(previewImageUrls.map(url => prisma.previewImage.create({ data: { imageUrl: url, templateId: id } })));
+    }
+    if (previewMobileImageUrls.length) {
+      await prisma.previewImage.deleteMany({ where: { templateId: id } });
+      await Promise.all(previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: id } })));
     }
 
     if (sourceFileUrls.length) {

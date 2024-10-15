@@ -166,3 +166,102 @@ export async function logout(req: Request, res: Response) {
 
   return res.status(200).json({ message: 'Logout successful' });
 }
+
+// ================================================================================================ //
+// -------------------------------------- Forget Password ----------------------------------------- //
+// ================================================================================================ //
+export async function forgetPassword(req: Request, res: Response) {
+  const { email }: { email: string } = req.body;
+
+  // Basic validation
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  try {
+    // Check if user exists
+    const user: User | null = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'User with this email does not exist' });
+    }
+
+    // Generate an OTP
+    const otpCode = generateOtp();
+    const expiresAt = otpExpiryTime();
+
+    // Upsert OTP (update if exists, otherwise create)
+    await prisma.otp.upsert({
+      where: { userId: user.id },
+      update: { code: otpCode, expiresAt },
+      create: { userId: user.id, code: otpCode, expiresAt },
+    });
+
+    // In production, send the OTP via email
+    return res.status(200).json({ message: 'OTP sent successfully', otp: otpCode }); // Do not return OTP in production
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message || 'Forget password failed' });
+  }
+}
+
+// ================================================================================================ //
+// -------------------------------------- Reset Password ------------------------------------------ //
+// ================================================================================================ //
+export async function resetPassword(req: Request, res: Response) {
+  const { email, otp, newPassword, confirmNewPassword }: { email: string; otp: string; newPassword: string; confirmNewPassword: string } = req.body;
+
+  // Basic validation
+  if (!email || !otp || !newPassword || !confirmNewPassword) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    return res.status(400).json({ message: 'Passwords do not match' });
+  }
+
+  try {
+    // Find the user by email
+    const user: User | null = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'User with this email does not exist' });
+    }
+
+    // Verify the OTP
+    const userOtp: Otp | null = await prisma.otp.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (!userOtp) {
+      return res.status(400).json({ message: 'OTP not found. Please request a new OTP.' });
+    }
+
+    if (userOtp.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'OTP has expired. Please request a new OTP.' });
+    }
+
+    if (userOtp.code !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP. Please try again.' });
+    }
+
+    // OTP is valid; hash the new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update the user's password
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    // Optionally delete OTP after successful use
+    await prisma.otp.delete({ where: { userId: user.id } });
+
+    return res.status(200).json({ message: 'Password reset successfully' });
+  } catch (error: any) {
+    return res.status(500).json({ message: error.message || 'Password reset failed' });
+  }
+}

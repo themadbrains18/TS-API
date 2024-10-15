@@ -20,7 +20,7 @@ export const createTemplateType = async (req: Request, res: Response) => {
 export const getTemplateTypes = async (req: Request, res: Response) => {
   try {
     const templateTypes = await prisma.templateType.findMany();
-    return res.status(200).json(templateTypes);
+    return res.status(200).json({results:templateTypes});
   } catch (error) {
     return res.status(500).json({ message: 'Failed to retrieve TemplateTypes', error });
   }

@@ -38,15 +38,26 @@ export const getSubCategoryById = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
-    const subCategory = await prisma.subCategory.findMany({
+    const subCategories = await prisma.subCategory.findMany({
       where: { templateTypeId: id },
     });
 
-    if (!subCategory) {
-      return res.status(404).json({ message: "Subcategory not found" });
+    const softwareCategories = await prisma.softwareType.findMany({
+      where: { templateTypeId: id },
+    });
+
+    // If no subcategories or software categories are found
+    if (!subCategories.length && !softwareCategories.length) {
+      return res.status(404).json({ message: 'Categories not found' });
     }
 
-    return res.status(200).json({results:subCategory});
+    return res.status(200).json({
+      results: {
+        subCategories,
+        softwareCategories
+      }
+
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Failed to retrieve subcategory", error });

@@ -138,23 +138,152 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
   }
 }
 
-// Get all templates
+// Get templates with filters and pagination
 export async function getTemplates(req: Request, res: Response) {
   try {
-    const templates = await prisma.template.findMany({
-      include: {
-        credits: true,
-        sliderImages: true,
-        previewImages: true,
-        previewMobileImages: true,
-        sourceFiles: true,
+    // Extract filters and pagination parameters from the query
+    const {
+      industryTypeId,
+      templateTypeId,
+      softwareTypeId,
+      isPaid,
+      minPrice,
+      maxPrice,
+      search,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    // Create filter conditions dynamically
+    const filters: any = {};
+
+    if (industryTypeId) {
+      filters.industryTypeId = industryTypeId;
+    }
+    if (templateTypeId) {
+      filters.templateTypeId = templateTypeId;
+    }
+    if (softwareTypeId) {
+      filters.softwareTypeId = softwareTypeId;
+    }
+    if (isPaid) {
+      filters.isPaid = isPaid === 'true'; // Ensure it's a boolean
+    }
+    if (minPrice) {
+      filters.price = { gte: parseFloat(minPrice as string) };
+    }
+    if (maxPrice) {
+      if (filters.price) {
+        filters.price.lte = parseFloat(maxPrice as string);
+      } else {
+        filters.price = { lte: parseFloat(maxPrice as string) };
+      }
+    }
+    if (search) {
+      filters.title = { contains: search as string };
+    }
+    // Pagination calculation
+    const skip = (Number(page) - 1) * Number(limit);
+    const take = Number(limit);
+
+    // Fetch templates with filters, pagination, and include relations
+    const [templates, totalTemplates] = await Promise.all([
+      prisma.template.findMany({
+        where: filters,
+        include: {
+          credits: true,
+          sliderImages: true,
+          previewImages: true,
+          previewMobileImages: true,
+          sourceFiles: true,
+        },
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' }, // Order templates by creation date
+      }),
+      prisma.template.count({ where: filters }) // Count total templates matching filters
+    ]);
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalTemplates / take);
+
+    // Send the response
+    return res.status(200).json({
+      data: templates,
+      pagination: {
+        totalTemplates,
+        totalPages,
+        currentPage: Number(page),
+        limit: Number(limit),
       },
     });
-    return res.status(200).json(templates);
   } catch (error: any) {
     return res.status(500).json({ message: 'Failed to fetch templates', error: error.message });
   }
 }
+
+// Fetch Latest Templates
+export const getLatestTemplates = async (req: Request, res: Response) => {
+  try {
+    const latestTemplates = await prisma.template.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 10,
+      include: {
+        credits: true,
+        sliderImages: true,
+        previewImages: true,
+        sourceFiles: true,
+        previewMobileImages: true,
+      },
+    });
+
+    return res.json({ templates: latestTemplates });
+  } catch (error) {
+    console.error("Error fetching latest templates:", error);
+    return res.status(500).json({ message: "Failed to fetch latest templates", error });
+  }
+};
+
+// Record template download
+export const templateDownloads = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const template = await prisma.template.update({
+      where: { id },
+      data: { downloads: { increment: 1 } },
+    });
+    res.json({ message: 'Download recorded', template });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to record download', error });
+  }
+}
+
+// Fetch Popular Templates
+export const getPopularTemplates = async (req: Request, res: Response) => {
+  try {
+    const popularTemplates = await prisma.template.findMany({
+      orderBy: {
+        downloads: 'desc',
+      },
+      take: 10,
+      include: {
+        credits: true,
+        sliderImages: true,
+        previewImages: true,
+        sourceFiles: true,
+        previewMobileImages: true,
+      },
+    });
+
+    return res.json({ templates: popularTemplates });
+  } catch (error) {
+    console.error("Error fetching popular templates:", error);
+    return res.status(500).json({ message: "Failed to fetch popular templates", error });
+  }
+};
+
 
 // Get all templates by userID
 export async function getAllTemplatesByUserId(req: Request, res: Response) {
@@ -163,9 +292,9 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
       {
         where: { userId: req.user?.id },
         include: {
-          templateType:true,
-          softwareType:true,
-          industries:true,
+          templateType: true,
+          softwareType: true,
+          industries: true,
           credits: true,
           sliderImages: true,
           previewImages: true,
@@ -203,8 +332,6 @@ export async function getTemplateById(req: Request, res: Response) {
     return res.status(500).json({ message: 'Failed to fetch template', error: error.message });
   }
 }
-
-
 
 
 // Update an existing template

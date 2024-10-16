@@ -36,11 +36,10 @@ async function comparePassword(enteredPassword: string, storedPassword: string):
   return bcrypt.compare(enteredPassword, storedPassword);
 }
 
-// ================================================================================================ //
 // -------------------------------------- Register User ------------------------------------------- //
 // ================================================================================================ //
 export async function register(req: Request, res: Response) {
-  const { name, email, password, confirmPassword }: { name: string; email: string; password: string; confirmPassword: string } = req.body;
+  const { name, email, password, confirmPassword, otp }: { name: string; email: string; password: string; confirmPassword: string; otp?: string } = req.body;
 
   // Basic validation
   if (!name || !email || !password || !confirmPassword) {
@@ -56,23 +55,65 @@ export async function register(req: Request, res: Response) {
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+
+    // If user doesn't exist, create a new user
+    if (!existingUser) {
+      // Hash the password
+      const hashedPassword = await hashPassword(password);
+
+      // Create the new user
+      const newUser: User = await prisma.user.create({
+        data: { name, email, password: hashedPassword, role: 'USER' },
+      });
+
+      // Generate OTP
+      const otpCode = generateOtp();
+      const expiresAt = otpExpiryTime();
+
+      // Create OTP for the new user
+      await prisma.otp.create({
+        data: {
+          userId: newUser.id, // Use the new user's ID
+          code: otpCode,
+          expiresAt,
+        },
+      });
+
+      // In production, you would send the OTP via email or SMS here
+      return res.status(201).json({ message: 'User registered successfully. OTP sent.', otp: otpCode }); // Do not return OTP in production
     }
+    
 
-    // Hash the password
-    const hashedPassword = await hashPassword(password);
+    // If OTP is provided, verify it for the existing user
+    if (otp) {
+      const userOtp: Otp | null = await prisma.otp.findUnique({
+        where: { userId: existingUser.id }, // Check OTP for the existing user
+      });
 
-    // Create new user with default role (USER)
-    const newUser: User = await prisma.user.create({
-      data: { name, email, password: hashedPassword, role: 'USER' },
-    });
+      if (!userOtp) {
+        return res.status(400).json({ message: 'OTP not found. Please request a new OTP.' });
+      }
 
-    return res.status(201).json({ message: 'User registered successfully', user: newUser });
+      if (userOtp.expiresAt < new Date()) {
+        return res.status(400).json({ message: 'OTP has expired. Please request a new OTP.' });
+      }
+
+      if (userOtp.code !== otp) {
+        return res.status(400).json({ message: 'Invalid OTP. Please try again.' });
+      }
+
+      // OTP is valid; proceed with registration (or other logic)
+      await prisma.otp.delete({ where: { userId: userOtp.userId } }); // Optionally delete OTP after successful use
+      return res.status(200).json({ message: 'OTP verified successfully.' });
+    } else {
+      // If no OTP is provided for an existing user, prompt for OTP generation
+      return res.status(400).json({ message: 'User already exist.' });
+    }
   } catch (error: any) {
     return res.status(500).json({ message: error.message || 'Registration failed' });
   }
 }
+
 
 // ================================================================================================ //
 // -------------------------------------- User Login with OTP ------------------------------------- //

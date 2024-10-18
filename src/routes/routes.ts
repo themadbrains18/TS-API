@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { validateData } from '../middlewares/zodValidationMiddleware';
 import { userLoginSchema, userSignUpSchema } from '../dto/user.dto';
 
-import { register, login, logout, forgetPassword } from '../controllers/authController';
+import { register, login, logout, forgetPassword, resetPassword, verifyOtp } from '../controllers/authController';
 import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, } from '../controllers/templateController';
 import { createCredit, getCredits, updateCredit, deleteCredit, } from '../controllers/creditController';
 import { createTechnicalDetail, getTechnicalDetails, updateTechnicalDetail, deleteTechnicalDetail, } from '../controllers/technicalDetailController';
@@ -20,8 +20,11 @@ const router = Router();
 // Authentication routes
 router.post('/register', validateData(userSignUpSchema), register); // Register a new user
 router.post('/login', validateData(userLoginSchema), login); // Log in an existing user
-router.post('/logout', authenticateToken, logout); // Log out the current user (protected)
-router.post('/forget-password', forgetPassword); // Log out the current user (protected)
+router.post('/verify-otp', verifyOtp);
+router.post('/logout', logout); 
+router.post('/forget-password', forgetPassword);
+router.post('/reset-password', resetPassword);
+
 
 // Template routes
 router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, createTemplate); // Create a new template (with file upload)

@@ -21,7 +21,7 @@ function generateOtp(): string {
 // Set OTP expiration time (e.g., 10 minutes from now)
 function otpExpiryTime(): Date {
   const now = new Date();
-  now.setMinutes(now.getMinutes() + 1); // OTP valid for 10 minutes
+  now.setMinutes(now.getMinutes() + 10); // OTP valid for 10 minutes
   return now;
 }
 
@@ -41,8 +41,6 @@ async function comparePassword(enteredPassword: string, storedPassword: string):
 export async function register(req: Request, res: Response) {
   const { name, email, password, confirmPassword, otp }: { name: string; email: string; password: string; confirmPassword: string; otp?: string } = req.body;
 
-  
-
   // Basic validation
   if (!name || !email || !password || !confirmPassword) {
     return res.status(400).json({ message: 'All fields are required' });
@@ -58,71 +56,60 @@ export async function register(req: Request, res: Response) {
       where: { email },
     });
 
-    
+    // If user doesn't exist, create a new user
+    if (!existingUser) {
+      // Hash the password
+      const hashedPassword = await hashPassword(password);
 
-    if (existingUser) {
-      // Check if there's a pending OTP
-      const userOtp = await prisma.otp.findUnique({
-        where: { userId: existingUser.id },
+      // Create the new user
+      const newUser: User = await prisma.user.create({
+        data: { name, email, password: hashedPassword, role: 'USER' },
       });
 
+      // Generate OTP
+      const otpCode = generateOtp();
+      const expiresAt = otpExpiryTime();
 
-      
-      if (userOtp && userOtp.expiresAt > new Date()) {
-        return res.status(200).json({ message: 'An OTP was already sent. Please complete OTP verification.',otp:true });
-      }
-      if (userOtp && userOtp.expiresAt < new Date()){
-        return res.status(200).json({ message: 'OTP has expired. Please request a new OTP.', otp:true });
-      }
+      // Create OTP for the new user
+      await prisma.otp.create({
+        data: {
+          userId: newUser.id, // Use the new user's ID
+          code: otpCode,
+          expiresAt,
+        },
+      });
 
-
-      if (otp) {
-        // Validate the OTP if provided
-        if (!userOtp) {
-          return res.status(400).json({ message: 'OTP not found. Please request a new OTP.' });
-        }
-
-
-        if (userOtp.expiresAt < new Date()) {
-          console.log("in this");
-          
-          return res.status(200).json({ message: 'OTP has expired. Please request a new OTP.' });
-        }
-
-        if (userOtp.code !== otp) {
-          return res.status(400).json({ message: 'Invalid OTP. Please try again.' });
-        }
-
-        // OTP is valid; proceed with registration (or other logic)
-        await prisma.otp.delete({ where: { userId: userOtp.userId } });
-        return res.status(200).json({ message: 'OTP verified successfully.' });
-      } else {
-        return res.status(400).json({ message: 'User already exists. Please complete the OTP verification.' });
-      }
+      // In production, you would send the OTP via email or SMS here
+      return res.status(201).json({ message: 'User registered successfully. OTP sent.', otp: otpCode }); // Do not return OTP in production
     }
-
-    // If user doesn't exist, create a new user
-    const hashedPassword = await hashPassword(password);
-
-    const newUser = await prisma.user.create({
-      data: { name, email, password: hashedPassword, role: 'USER' },
-    });
-
-    const otpCode = generateOtp();
-    const expiresAt = otpExpiryTime();
-
-    await prisma.otp.create({
-      data: {
-        userId: newUser.id,
-        code: otpCode,
-        expiresAt,
-      },
-    });
-
-    return res.status(201).json({ message: 'User registered successfully. OTP sent.' });
-  } catch (error: any) {
-    console.log(error,"==error");
     
+
+    // If OTP is provided, verify it for the existing user
+    if (otp) {
+      const userOtp: Otp | null = await prisma.otp.findUnique({
+        where: { userId: existingUser.id }, // Check OTP for the existing user
+      });
+
+      if (!userOtp) {
+        return res.status(400).json({ message: 'OTP not found. Please request a new OTP.' });
+      }
+
+      if (userOtp.expiresAt < new Date()) {
+        return res.status(400).json({ message: 'OTP has expired. Please request a new OTP.' });
+      }
+
+      if (userOtp.code !== otp) {
+        return res.status(400).json({ message: 'Invalid OTP. Please try again.' });
+      }
+
+      // OTP is valid; proceed with registration (or other logic)
+      await prisma.otp.delete({ where: { userId: userOtp.userId } }); // Optionally delete OTP after successful use
+      return res.status(200).json({ message: 'OTP verified successfully.' });
+    } else {
+      // If no OTP is provided for an existing user, prompt for OTP generation
+      return res.status(400).json({ message: 'User already exist.' });
+    }
+  } catch (error: any) {
     return res.status(500).json({ message: error.message || 'Registration failed' });
   }
 }

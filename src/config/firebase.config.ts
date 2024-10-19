@@ -7,7 +7,6 @@ interface FirebaseConfig {
     apiKey: string;
     authDomain: string;
     projectId: string;
-    // databaseURL: string;
     storageBucket: string;
     messagingSenderId: string;
     appId: string;
@@ -20,7 +19,6 @@ const getFirebaseConfig = (): FirebaseConfig => {
         API_KEY,
         AUTH_DOMAIN,
         PROJECT_ID,
-        // FIRESTORE_DB_URL,
         STORAGE_BUCKET,
         MESSAGING_SENDER_ID,
         APP_ID,
@@ -36,7 +34,6 @@ const getFirebaseConfig = (): FirebaseConfig => {
         apiKey: API_KEY,
         authDomain: AUTH_DOMAIN,
         projectId: PROJECT_ID,
-        // databaseURL: FIRESTORE_DB_URL,
         storageBucket: STORAGE_BUCKET,
         messagingSenderId: MESSAGING_SENDER_ID,
         appId: APP_ID,

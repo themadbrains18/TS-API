@@ -19,7 +19,18 @@ export const createTemplateType = async (req: Request, res: Response) => {
 // Get all TemplateTypes
 export const getTemplateTypes = async (req: Request, res: Response) => {
   try {
-    const templateTypes = await prisma.templateType.findMany();
+    const templateTypes = await prisma.templateType.findMany({
+      include: {
+        subCategories: true, 
+        templates: {
+          select: {
+            id: true,  
+            title: true 
+          }
+        }
+      },
+    });
+    
     return res.status(200).json({results:templateTypes});
   } catch (error) {
     return res.status(500).json({ message: 'Failed to retrieve TemplateTypes', error });

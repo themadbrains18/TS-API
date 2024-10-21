@@ -40,7 +40,7 @@ async function comparePassword(enteredPassword: string, storedPassword: string):
 
 // ================================== Register User ==================================
 export async function register(req: Request, res: Response) {
-  const { name, email, password, confirmPassword } = req.body;
+  const { name, email, password, confirmPassword,otp } = req.body;
 
   if (!name || !email || !password || !confirmPassword) {
     return res.status(400).json({ message: 'All fields are required' });
@@ -56,23 +56,37 @@ export async function register(req: Request, res: Response) {
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists. Please log in.' });
     }
+    if(!otp){
+      const otpCode = generateOtp();
+      const expiresAt = otpExpiryTime();
+  
+      await prisma.otp.create({
+        data: { email:email, code: otpCode, expiresAt },
+      });
+  
+      await sendOtpEmail(email, otpCode);
+      
+      
+    }
+    if (otp) {
+      const verificationResponse = await verifyOtp(req); 
 
-    const hashedPassword = await hashPassword(password);
-    const newUser: User = await prisma.user.create({
-      data: { name, email, password: hashedPassword, role: 'USER' },
-    });
+      // Check if OTP verification was successful
+      if (verificationResponse.status === 200) { 
+        const hashedPassword = await hashPassword(password);
+        const newUser: User = await prisma.user.create({
+          data: { name, email, password: hashedPassword, role: 'USER' },
+        });
+    
+        return res.status(201).json({ message: 'User registered successfully.', user: newUser });
+      } else {
+        return res.status(verificationResponse.status).json(verificationResponse);
+      }
+    }
 
-    const otpCode = generateOtp();
-    const expiresAt = otpExpiryTime();
-
-    await prisma.otp.create({
-      data: { userId: newUser.id, code: otpCode, expiresAt },
-    });
-
-    await sendOtpEmail(email, otpCode);
 
     return res.status(201).json({
-      message: 'User registered successfully. OTP sent to email.',
+      results:{message: 'User registered successfully. OTP sent to email.',otp:true}
     });
   } catch (error: any) {
     console.error(error);
@@ -83,7 +97,7 @@ export async function register(req: Request, res: Response) {
 
 // ================================== Login User ==================================
 export async function login(req: Request, res: Response) {
-  const { email, password } = req.body;
+  const { email, password,otp } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
@@ -96,6 +110,7 @@ export async function login(req: Request, res: Response) {
     if (!user || !(await comparePassword(password, user.password))) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
+    if(!otp){
 
     // Generate a new OTP and its expiration time
     const otpCode = generateOtp();
@@ -103,22 +118,34 @@ export async function login(req: Request, res: Response) {
 
     // Upsert the OTP record (create or update if it already exists)
     await prisma.otp.upsert({
-      where: { userId: user.id },
+      where: {email: email },
       update: { code: otpCode, expiresAt },
-      create: { userId: user.id, code: otpCode, expiresAt },
+      create: {email: email, code: otpCode, expiresAt },
     });
 
     // Send the OTP to the user's email
     await sendOtpEmail(email, otpCode);
+    }
+    else{
+      const verificationResponse = await verifyOtp(req); 
+    
+      // Check if OTP verification was successful
+      if (verificationResponse.status === 200) { 
+            // Generate JWT Token for the session
+        const token = generateToken(user.id);
+  
+      // Send response with token (to be used in subsequent requests) and OTP verification requirement message
+      return res.status(200).json({
+        message: 'Login successful. OTP sent to your email for verification.',
+        token,
+      });
+      } else {
+        return res.status(verificationResponse.status).json(verificationResponse);
+      }
+  
+     
+    }
 
-    // Generate JWT Token for the session
-    const token = generateToken(user.id);
-
-    // Send response with token (to be used in subsequent requests) and OTP verification requirement message
-    return res.status(200).json({
-      message: 'Login successful. OTP sent to your email for verification.',
-      token,
-    });
   } catch (error: any) {
     console.error(error);
     return res.status(500).json({ message: 'Login failed', error: error.message });
@@ -168,9 +195,9 @@ export async function forgetPassword(req: Request, res: Response) {
 
     // Upsert OTP for user
     await prisma.otp.upsert({
-      where: { userId: user.id },
+      where: { email: email },
       update: { code: otpCode, expiresAt },
-      create: { userId: user.id, code: otpCode, expiresAt },
+      create: { email: email, code: otpCode, expiresAt },
     });
 
     // Send the OTP to the user's email
@@ -204,7 +231,7 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
     }
 
     // Find OTP
-    const userOtp = await prisma.otp.findUnique({ where: { userId: user.id } });
+    const userOtp = await prisma.otp.findUnique({ where: { email: email } });
 
     // Validate OTP
     if (!userOtp || userOtp.code !== otp || userOtp.expiresAt < new Date()) {
@@ -221,7 +248,7 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
     });
 
     // Delete the OTP after successful password reset
-    await prisma.otp.delete({ where: { userId: user.id } });
+    await prisma.otp.delete({ where: { email: email} });
 
     return res.status(200).json({ message: 'Password reset successfully.' });
   } catch (error: any) {
@@ -232,27 +259,33 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
 // ================================================================================================
 // -------------------------------------- Verify OTP ----------------------------------------------
 // ================================================================================================
-export async function verifyOtp(req: Request, res: Response) {
-  const { userId, otp }: { userId: string; otp: string } = req.body;
+export async function verifyOtp(req: Request): Promise<{ status: number; message: string }> {
+  const { email, otp }: { email: string; otp: string } = req.body;
 
-  if (!userId || !otp) {
-    return res.status(400).json({ message: 'User ID and OTP are required' });
+  // Validate the presence of email and OTP
+  if (!email || !otp) {
+    return { status: 400, message: 'Email and OTP are required' };
   }
 
   try {
-    const userOtp = await prisma.otp.findUnique({ where: { userId } });
+    // Find the OTP record for the provided email
+    const userOtp = await prisma.otp.findUnique({ where: { email } });
 
+    // Check if OTP is valid and not expired
     if (!userOtp || userOtp.code !== otp || userOtp.expiresAt < new Date()) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
+      return { status: 400, message: 'Invalid or expired OTP' };
     }
 
-    await prisma.otp.delete({ where: { userId } });
+    // Delete the OTP after successful verification
+    await prisma.otp.delete({ where: { email } });
 
-    return res.status(200).json({ message: 'OTP verified successfully.' });
+    return { status: 200, message: 'OTP verified successfully.' };
   } catch (error: any) {
-    return res.status(500).json({ message: 'OTP verification failed', error: error.message });
+    console.error(error);
+    return { status: 500, message: error.message };
   }
 }
+
 
 // ================================================================================================
 // -------------------------------------- Resend OTP ---------------------------------------------
@@ -275,9 +308,9 @@ export async function resendOtp(req: Request, res: Response) {
     const expiresAt = otpExpiryTime();
 
     await prisma.otp.upsert({
-      where: { userId: user.id },
+      where: { email: email },
       update: { code: otpCode, expiresAt },
-      create: { userId: user.id, code: otpCode, expiresAt },
+      create: { email: email, code: otpCode, expiresAt },
     });
 
     return res.status(200).json({ message: 'OTP resent successfully.', results: { otp: true } });

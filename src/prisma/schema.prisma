@@ -11,7 +11,6 @@ enum Role {
   ADMIN
   USER
 }
-
 model User {
   id        String     @id @default(cuid())
   email     String     @unique
@@ -22,17 +21,13 @@ model User {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   templates Template[] @relation("UserTemplates")
-  otp       Otp?       @relation("UserOtp") // One-to-one relation with Otp (optional if no OTP exists)
 }
 
 model Otp {
   id        String   @id @default(cuid())
   code      String
   expiresAt DateTime
-  userId    String   @unique
-  user      User     @relation("UserOtp", fields: [userId], references: [id])
-
-  @@index([userId], map: "Otp_userId_fkey") // Index for efficient OTP lookups
+  email     String   @unique // Ensure this is unique
 }
 
 model Template {

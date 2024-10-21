@@ -146,12 +146,13 @@ export async function getTemplates(req: Request, res: Response) {
       industryTypeId,
       templateTypeId,
       softwareTypeId,
+      subcategoryId, // Add subcategoryId here
       isPaid,
       minPrice,
       maxPrice,
       search,
       page = 1,
-      limit = 10,
+      limit = 12,
     } = req.query;
 
     // Create filter conditions dynamically
@@ -162,6 +163,9 @@ export async function getTemplates(req: Request, res: Response) {
     }
     if (templateTypeId) {
       filters.templateTypeId = templateTypeId;
+    }
+    if (subcategoryId) {
+      filters.subcategoryId = subcategoryId; // Add subcategory filter
     }
     if (softwareTypeId) {
       filters.softwareTypeId = softwareTypeId;
@@ -182,27 +186,44 @@ export async function getTemplates(req: Request, res: Response) {
     if (search) {
       filters.title = { contains: search as string };
     }
+
     // Pagination calculation
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
-    // Fetch templates with filters, pagination, and include relations
-    const [templates, totalTemplates] = await Promise.all([
-      prisma.template.findMany({
-        where: filters,
-        include: {
-          credits: true,
-          sliderImages: true,
-          previewImages: true,
-          previewMobileImages: true,
-          sourceFiles: true,
+ // Fetch templates with filters, pagination, and include relations
+const [templates, totalTemplates] = await Promise.all([
+  prisma.template.findMany({
+    where: {
+      ...filters,
+      subCategory: {
+        templateTypeId: templateTypeId, // Ensure subcategory matches template type
+      },
+    },
+    include: {
+      credits: true,
+      sliderImages: true,
+      previewImages: true,
+      previewMobileImages: true,
+      sourceFiles: true,
+      templateType:true,
+      softwareType: true,
+      subCategory: true,
+      user: {
+        select: {
+          name: true, 
         },
-        skip,
-        take,
-        orderBy: { createdAt: 'desc' }, // Order templates by creation date
-      }),
-      prisma.template.count({ where: filters }) // Count total templates matching filters
-    ]);
+      },
+    },
+    skip, // Pagination offset
+    take, // Number of items per page
+    orderBy: { createdAt: 'desc' }, // Order templates by creation date
+  }),
+  prisma.template.count({
+    where: filters, // Count total templates matching filters
+  }),
+]);
+
 
     // Calculate total pages
     const totalPages = Math.ceil(totalTemplates / take);
@@ -215,7 +236,7 @@ export async function getTemplates(req: Request, res: Response) {
         totalPages,
         currentPage: Number(page),
         limit: Number(limit),
-      },
+    }
     });
   } catch (error: any) {
     return res.status(500).json({ message: 'Failed to fetch templates', error: error.message });
@@ -314,6 +335,8 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
 export async function getTemplateById(req: Request, res: Response) {
   const { id } = req.params;
 
+  console.log(id,"==id");
+  
   try {
     const template = await prisma.template.findUnique({
       where: { id },

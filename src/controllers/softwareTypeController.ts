@@ -26,7 +26,7 @@ export const createSoftwareType = async (req: Request, res: Response) => {
 export const getSoftwareTypes = async (req: Request, res: Response) => {
   try {
     const softwareTypes = await prisma.softwareType.findMany();
-    return res.status(200).json(softwareTypes);
+    return res.status(200).json({results:softwareTypes});
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Failed to retrieve software types", error });

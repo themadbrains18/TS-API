@@ -38,11 +38,9 @@ async function comparePassword(enteredPassword: string, storedPassword: string):
 }
 
 
-// ================================================================================================
-// -------------------------------------- Register User -------------------------------------------
-// ================================================================================================
+// ================================== Register User ==================================
 export async function register(req: Request, res: Response) {
-  const { name, email, password, confirmPassword }: { name: string; email: string; password: string; confirmPassword: string } = req.body;
+  const { name, email, password, confirmPassword } = req.body;
 
   if (!name || !email || !password || !confirmPassword) {
     return res.status(400).json({ message: 'All fields are required' });
@@ -71,24 +69,21 @@ export async function register(req: Request, res: Response) {
       data: { userId: newUser.id, code: otpCode, expiresAt },
     });
 
-    // Send the OTP to the user's email
     await sendOtpEmail(email, otpCode);
 
     return res.status(201).json({
       message: 'User registered successfully. OTP sent to email.',
     });
   } catch (error: any) {
+    console.error(error);
     return res.status(500).json({ message: 'Registration failed', error: error.message });
   }
 }
 
 
-
-// ================================================================================================
-// -------------------------------------- Login User ----------------------------------------------
-// ================================================================================================
+// ================================== Login User ==================================
 export async function login(req: Request, res: Response) {
-  const { email, password }: { email: string; password: string } = req.body;
+  const { email, password } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
@@ -97,31 +92,39 @@ export async function login(req: Request, res: Response) {
   try {
     const user = await prisma.user.findUnique({ where: { email } });
 
+    // Check if the user exists and if the password is correct
     if (!user || !(await comparePassword(password, user.password))) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    // Generate a new OTP and its expiration time
     const otpCode = generateOtp();
     const expiresAt = otpExpiryTime();
 
+    // Upsert the OTP record (create or update if it already exists)
     await prisma.otp.upsert({
       where: { userId: user.id },
       update: { code: otpCode, expiresAt },
       create: { userId: user.id, code: otpCode, expiresAt },
     });
 
-    // Generate JWT Token
-    const token = generateToken(user.id);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { token },
-    });
+    // Send the OTP to the user's email
+    await sendOtpEmail(email, otpCode);
 
-    return res.status(200).json({ message: 'Login successful. OTP sent.', token });
+    // Generate JWT Token for the session
+    const token = generateToken(user.id);
+
+    // Send response with token (to be used in subsequent requests) and OTP verification requirement message
+    return res.status(200).json({
+      message: 'Login successful. OTP sent to your email for verification.',
+      token,
+    });
   } catch (error: any) {
+    console.error(error);
     return res.status(500).json({ message: 'Login failed', error: error.message });
   }
 }
+
 
 // ================================================================================================
 // -------------------------------------- Logout User ---------------------------------------------

@@ -19,6 +19,7 @@
     "@types/uuid": "^10.0.0",
     "appwrite": "^16.0.2",
     "bcrypt": "^5.1.1",
+    "bun": "^1.1.32",
     "cloudinary": "^2.5.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

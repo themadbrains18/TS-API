@@ -203,7 +203,7 @@ export async function forgetPassword(req: Request, res: Response) {
     // Send the OTP to the user's email
     await sendOtpEmail(email, otpCode);
 
-    return res.status(200).json({ message: 'OTP sent to email for password reset.' });
+    return res.status(200).json({results:{ message: 'OTP sent to email for password reset.', otp:true }});
   } catch (error: any) {
     return res.status(500).json({ message: 'Error sending password reset OTP', error: error.message });
   }

@@ -234,11 +234,7 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
     // Find OTP
     const userOtp = await prisma.otp.findUnique({ where: { email: email } });
 
-    // Validate OTP
-    if (!userOtp || userOtp.code !== otp || userOtp.expiresAt < new Date()) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
-    }
-
+    verifyOtp(req)
     if(newPassword){
 
       if (newPassword !== confirmNewPassword) {

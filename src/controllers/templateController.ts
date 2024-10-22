@@ -141,89 +141,108 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
 // Get templates with filters and pagination
 export async function getTemplates(req: Request, res: Response) {
   try {
-    // Extract filters and pagination parameters from the query
     const {
-      industryTypeId,
-      templateTypeId,
-      softwareTypeId,
-      subcategoryId, // Add subcategoryId here
+      industryTypeIds, // Can be string or array
+      templateTypeIds, // Can be string or array
+      softwareTypeIds, // Can be string or array
+      subcategoryIds, // Can be string or array
       isPaid,
-      minPrice,
-      maxPrice,
+      priceRanges, // Can be string or array
       search,
       page = 1,
       limit = 12,
     } = req.query;
 
-    // Create filter conditions dynamically
+    // Initialize filters object
     const filters: any = {};
 
-    if (industryTypeId) {
-      filters.industryTypeId = industryTypeId;
+    // Utility function to handle string or array inputs
+    const handleArrayInput = (input: any) => {
+      if (Array.isArray(input)) return input;
+      if (typeof input === 'string') return input.split(',');
+      return [];
+    };
+
+    // Handle industry filter (multiple industries)
+    if (industryTypeIds) {
+      filters.industryTypeId = { in: handleArrayInput(industryTypeIds) };
     }
-    if (templateTypeId) {
-      filters.templateTypeId = templateTypeId;
+
+    // Handle template type filter (multiple types)
+    if (templateTypeIds) {
+      filters.templateTypeId = { in: handleArrayInput(templateTypeIds) };
     }
-    if (subcategoryId) {
-      filters.subcategoryId = subcategoryId; // Add subcategory filter
+
+    // Handle subcategory filter (multiple subcategories)
+    if (subcategoryIds) {
+      filters.subcategoryId = { in: handleArrayInput(subcategoryIds) };
     }
-    if (softwareTypeId) {
-      filters.softwareTypeId = softwareTypeId;
+
+    // Handle software type filter (multiple software types)
+    if (softwareTypeIds) {
+      filters.softwareTypeId = { in: handleArrayInput(softwareTypeIds) };
     }
+
+    // Handle isPaid filter (boolean)
     if (isPaid) {
-      filters.isPaid = isPaid === 'true'; // Ensure it's a boolean
+      filters.isPaid = isPaid === 'true'; // Convert to boolean
     }
-    if (minPrice) {
-      filters.price = { gte: parseFloat(minPrice as string) };
+
+    // Handle price range filter
+    if (priceRanges) {
+      const ranges = handleArrayInput(priceRanges);
+      const priceConditions = ranges.map((range: string) => {
+        const [minPrice, maxPrice] = range.split('-').map((p) => parseFloat(p));
+        return { gte: minPrice, lte: maxPrice }; // Add range condition
+      });
+
+      // Combine multiple price conditions with OR logic
+      filters.OR = priceConditions.map((rangeCondition) => ({
+        price: rangeCondition,
+      }));
     }
-    if (maxPrice) {
-      if (filters.price) {
-        filters.price.lte = parseFloat(maxPrice as string);
-      } else {
-        filters.price = { lte: parseFloat(maxPrice as string) };
-      }
-    }
+
+    // Handle search query
     if (search) {
       filters.title = { contains: search as string };
     }
 
-    // Pagination calculation
+    // Pagination logic
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
- // Fetch templates with filters, pagination, and include relations
-const [templates, totalTemplates] = await Promise.all([
-  prisma.template.findMany({
-    where: {
-      ...filters,
-      subCategory: {
-        templateTypeId: templateTypeId, // Ensure subcategory matches template type
-      },
-    },
-    include: {
-      credits: true,
-      sliderImages: true,
-      previewImages: true,
-      previewMobileImages: true,
-      sourceFiles: true,
-      templateType:true,
-      softwareType: true,
-      subCategory: true,
-      user: {
-        select: {
-          name: true, 
+    // Fetch templates with filters, pagination, and relations
+    const [templates, totalTemplates] = await Promise.all([
+      prisma.template.findMany({
+        where: {
+          ...filters,
+          subCategory: {
+            templateTypeId: templateTypeIds ? { in: handleArrayInput(templateTypeIds) } : undefined,
+          },
         },
-      },
-    },
-    skip, // Pagination offset
-    take, // Number of items per page
-    orderBy: { createdAt: 'desc' }, // Order templates by creation date
-  }),
-  prisma.template.count({
-    where: filters, // Count total templates matching filters
-  }),
-]);
-
+        include: {
+          credits: true,
+          sliderImages: true,
+          previewImages: true,
+          previewMobileImages: true,
+          sourceFiles: true,
+          templateType: true,
+          softwareType: true,
+          subCategory: true,
+          user: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        skip, // Pagination offset
+        take, // Limit per page
+        orderBy: { createdAt: 'desc' }, // Order by creation date
+      }),
+      prisma.template.count({
+        where: filters, // Count total templates matching filters
+      }),
+    ]);
 
     // Calculate total pages
     const totalPages = Math.ceil(totalTemplates / take);
@@ -236,12 +255,13 @@ const [templates, totalTemplates] = await Promise.all([
         totalPages,
         currentPage: Number(page),
         limit: Number(limit),
-    }
+      },
     });
   } catch (error: any) {
     return res.status(500).json({ message: 'Failed to fetch templates', error: error.message });
   }
 }
+
 
 // Fetch Latest Templates
 export const getLatestTemplates = async (req: Request, res: Response) => {
@@ -335,7 +355,6 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
 export async function getTemplateById(req: Request, res: Response) {
   const { id } = req.params;
 
-  console.log(id,"==id");
   
   try {
     const template = await prisma.template.findUnique({
@@ -346,8 +365,14 @@ export async function getTemplateById(req: Request, res: Response) {
         previewImages: true,
         previewMobileImages: true,
         sourceFiles: true,
+        templateType:true,
+        subCategory:true,
+        user:true,
+        softwareType:true
       },
     });
+    console.log(template,"==template");
+    
     if (!template) return res.status(404).json({ message: 'Template not found.' });
 
     return res.status(200).json(template);

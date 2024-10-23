@@ -201,7 +201,7 @@ export async function forgetPassword(req: Request, res: Response) {
 
     await sendOtpEmail(email, otpCode);
 
-    return res.status(200).json({ results: { message: 'OTP sent to email for password reset.', otp: true } });
+    return res.status(200).json({ message: 'OTP sent to email for password reset.', results: { otp: true } });
   } catch (error: any) {
     return res.status(500).json({ message: 'Error sending password reset OTP', error: error.message });
   }
@@ -243,7 +243,7 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
         });
 
 
-        return res.status(200).json({ message: 'Password reset successfully.' });
+        return res.status(200).json({ message: 'Password reset successfully.'});
       }
       else {
         const userOtp = await prisma.otp.findUnique({ where: { email: email } });
@@ -255,7 +255,7 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
     
         // Check if OTP verification was successful
         if (verificationResponse.status === 200) {
-          return res.status(verificationResponse.status).json({ results: { message: verificationResponse.message, otp: true } });
+          return res.status(verificationResponse.status).json({ results: { message: verificationResponse.message, otp: true , } });
         
         } else {
           return res.status(verificationResponse.status).json(verificationResponse.message);

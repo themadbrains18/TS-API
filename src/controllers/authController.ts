@@ -201,7 +201,7 @@ export async function forgetPassword(req: Request, res: Response) {
 
     await sendOtpEmail(email, otpCode);
 
-    return res.status(200).json({results:{ message: 'OTP sent to email for password reset.', otp:true }});
+    return res.status(200).json({ results: { message: 'OTP sent to email for password reset.', otp: true } });
   } catch (error: any) {
     return res.status(500).json({ message: 'Error sending password reset OTP', error: error.message });
   }
@@ -212,9 +212,9 @@ export async function forgetPassword(req: Request, res: Response) {
 // -------------------------------------- Reset Password with OTP ---------------------------------
 // ================================================================================================
 export async function resetPasswordWithOtp(req: Request, res: Response) {
-  const { email, otp, newPassword, confirmNewPassword }: { email: string; otp: string; newPassword: string; confirmNewPassword: string } = req.body;
+  const { email, otp, newPassword, confirmPassword }: { email: string; otp: string; newPassword: string; confirmPassword: string } = req.body;
 
-  if (!email || !otp ) {
+  if (!email || !otp) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
@@ -226,44 +226,42 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Find OTP
-    const userOtp = await prisma.otp.findUnique({ where: { email: email } });
+      // Generate JWT Token for the session
+      if (newPassword) {
+        console.log("here in this");
 
-    const verificationResponse = await verifyOtp(req);
-console.log(verificationResponse,
- " verification response",newPassword
-);
-
-      // Check if OTP verification was successful
-      if (verificationResponse.status === 200) {
-        // Generate JWT Token for the session
-        if(newPassword){
-console.log("here in this");
-
-          if (newPassword !== confirmNewPassword) {
-            return res.status(400).json({ message: 'Passwords do not match' });
-          }
-          // Hash the new password
-          const hashedPassword = await hashPassword(newPassword);
-      
-          // Update user's password
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { password: hashedPassword },
-          });
-      
-          // Delete the OTP after successful password reset
-          await prisma.otp.delete({ where: { email: email } });
-      
-          return res.status(200).json({ message: 'Password reset successfully.' });
+        if (newPassword !== confirmPassword) {
+          return res.status(400).json({ message: 'Passwords do not match' });
         }
-        else{
-          return res.status(verificationResponse.status).json({results:{message:verificationResponse.message,otp:true}});
-        }
-      } else {
-        return res.status(verificationResponse.status).json(verificationResponse.message);
+        // Hash the new password
+        const hashedPassword = await hashPassword(newPassword);
+
+        // Update user's password
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { password: hashedPassword },
+        });
+
+
+        return res.status(200).json({ message: 'Password reset successfully.' });
       }
+      else {
+        const userOtp = await prisma.otp.findUnique({ where: { email: email } });
     
+        const verificationResponse = await verifyOtp(req);
+        console.log(verificationResponse,
+          " verification response", newPassword
+        );
+    
+        // Check if OTP verification was successful
+        if (verificationResponse.status === 200) {
+          return res.status(verificationResponse.status).json({ results: { message: verificationResponse.message, otp: true } });
+        
+        } else {
+          return res.status(verificationResponse.status).json(verificationResponse.message);
+        }
+      }
+
   } catch (error: any) {
     return res.status(500).json({ message: 'Error resetting password', error: error.message });
   }
@@ -285,9 +283,9 @@ export async function verifyOtp(req: Request): Promise<{ status: number; message
     const userOtp = await prisma.otp.findUnique({ where: { email } });
 
     // Check if OTP is valid and not expired
-    // if (!userOtp || userOtp.code !== otp || userOtp.expiresAt < new Date()) {
-    //   return { status: 400, message: 'Invalid or expired OTP' };
-    // }
+    if (!userOtp || userOtp.code !== otp || userOtp.expiresAt < new Date()) {
+      return { status: 400, message: 'Invalid or expired OTP' };
+    }
 
     // Delete the OTP after successful verification
     await prisma.otp.delete({ where: { email } });

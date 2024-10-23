@@ -140,6 +140,8 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
 
 // Get templates with filters and pagination
 export async function getTemplates(req: Request, res: Response) {
+  // console.log(req.query,"=req query");
+  
   try {
     const {
       industryTypeIds, // Can be string or array
@@ -152,6 +154,10 @@ export async function getTemplates(req: Request, res: Response) {
       page = 1,
       limit = 12,
     } = req.query;
+
+
+    // console.log(priceRanges,"==price ranges");
+    
 
     // Initialize filters object
     const filters: any = {};
@@ -371,7 +377,7 @@ export async function getTemplateById(req: Request, res: Response) {
         softwareType:true
       },
     });
-    console.log(template,"==template");
+    // console.log(template,"==template");
     
     if (!template) return res.status(404).json({ message: 'Template not found.' });
 

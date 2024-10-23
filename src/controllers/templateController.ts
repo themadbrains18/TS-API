@@ -145,7 +145,7 @@ export async function getTemplates(req: Request, res: Response) {
   try {
     const {
       industryTypeIds, // Can be string or array
-      templateTypeIds, // Can be string or array
+      templateTypeId, // Can be string or array
       softwareTypeIds, // Can be string or array
       subcategoryIds, // Can be string or array
       isPaid,
@@ -175,10 +175,9 @@ export async function getTemplates(req: Request, res: Response) {
     }
 
     // Handle template type filter (multiple types)
-    if (templateTypeIds) {
-      filters.templateTypeId = { in: handleArrayInput(templateTypeIds) };
+    if (templateTypeId) {
+      filters.templateTypeId = templateTypeId;
     }
-
     // Handle subcategory filter (multiple subcategories)
     if (subcategoryIds) {
       filters.subcategoryId = { in: handleArrayInput(subcategoryIds) };
@@ -223,8 +222,8 @@ export async function getTemplates(req: Request, res: Response) {
         where: {
           ...filters,
           subCategory: {
-            templateTypeId: templateTypeIds ? { in: handleArrayInput(templateTypeIds) } : undefined,
-          },
+            templateTypeId: templateTypeId, // Ensure subcategory matches template type
+          }
         },
         include: {
           credits: true,

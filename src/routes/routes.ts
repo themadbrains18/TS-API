@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { validateData } from '../middlewares/zodValidationMiddleware';
 import { userLoginSchema, userSignUpSchema } from '../dto/user.dto';
 
-import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp } from '../controllers/authController';
+import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser } from '../controllers/authController';
 import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, } from '../controllers/templateController';
 import { createCredit, getCredits, updateCredit, deleteCredit, } from '../controllers/creditController';
 import { createTechnicalDetail, getTechnicalDetails, updateTechnicalDetail, deleteTechnicalDetail, } from '../controllers/technicalDetailController';
@@ -25,6 +25,7 @@ router.post('/resend-otp', resendOtp);
 router.post('/logout', logout);
 router.post('/forget-password', forgetPassword);
 router.post('/reset-password', resetPasswordWithOtp);
+router.get('/check-jwt',authenticateToken, checkUser);
 
 
 // Template routes

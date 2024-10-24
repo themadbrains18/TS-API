@@ -144,7 +144,7 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
 
 // Get templates with filters and pagination
 export async function getTemplates(req: Request, res: Response) {
-  // console.log(req.query,"=req query");
+  console.log(req.query,"=req query");
 
   try {
     const {
@@ -249,8 +249,13 @@ export async function getTemplates(req: Request, res: Response) {
         orderBy: { createdAt: 'desc' }, // Order by creation date
       }),
       prisma.template.count({
-        where: filters, // Count total templates matching filters
-      }),
+        where: {
+          ...filters,
+          subCategory: {
+            templateTypeId: templateTypeId, // Ensure subcategory matches template type
+          }
+        }}
+      ),
     ]);
 
     // Calculate total pages

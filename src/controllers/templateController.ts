@@ -19,11 +19,10 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
 
     let creditqwqs = JSON.parse(req.body.credits)
-    console.log(creditqwqs,"==creditqwqs");
     
     
     const {
-      name, dollarPrice, description, industryType, templateType,
+      name, dollarPrice, description, industry, templateType,
       templateSubCategory, softwareType, version, isPaid, seoTags, credits, techDetails
     } = req.body;
 
@@ -68,14 +67,14 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     const newTemplate = await prisma.template.create({
       data: {
         title:name,
-        price:dollarPrice!=="undefined" ?Number(dollarPrice):0,
+        price:(dollarPrice!="undefined" && isPaid==="true") ?Number(dollarPrice):0,
         description,
-        industryTypeId:industryType[0].id,
+        industryTypeId:industry,
         templateTypeId:templateType,
         softwareTypeId:softwareType,
         subCategoryId:templateSubCategory,
         version,
-        isPaid:Boolean(isPaid),
+        isPaid:(isPaid==="false"?false:true),
         seoTags,
         userId,
         credits: {

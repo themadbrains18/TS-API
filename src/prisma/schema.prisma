@@ -41,7 +41,7 @@ model Template {
   downloads   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  user        User     @relation("UserTemplates", fields: [userId], references: [id])
+  user        User?     @relation("UserTemplates", fields: [userId], references: [id])
 
   // General fields
   industries     IndustryType? @relation(fields: [industryTypeId], references: [id])

@@ -141,7 +141,7 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
 // Get templates with filters and pagination
 export async function getTemplates(req: Request, res: Response) {
   // console.log(req.query,"=req query");
-  
+
   try {
     const {
       industryTypeIds, // Can be string or array
@@ -157,7 +157,7 @@ export async function getTemplates(req: Request, res: Response) {
 
 
     // console.log(priceRanges,"==price ranges");
-    
+
 
     // Initialize filters object
     const filters: any = {};
@@ -245,7 +245,10 @@ export async function getTemplates(req: Request, res: Response) {
         orderBy: { createdAt: 'desc' }, // Order by creation date
       }),
       prisma.template.count({
-        where: filters, // Count total templates matching filters
+        ...filters,
+        subCategory: {
+          templateTypeId: templateTypeId, // Ensure subcategory matches template type
+        }// Count total templates matching filters
       }),
     ]);
 
@@ -360,7 +363,7 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
 export async function getTemplateById(req: Request, res: Response) {
   const { id } = req.params;
 
-  
+
   try {
     const template = await prisma.template.findUnique({
       where: { id },
@@ -370,14 +373,14 @@ export async function getTemplateById(req: Request, res: Response) {
         previewImages: true,
         previewMobileImages: true,
         sourceFiles: true,
-        templateType:true,
-        subCategory:true,
-        user:true,
-        softwareType:true
+        templateType: true,
+        subCategory: true,
+        user: true,
+        softwareType: true
       },
     });
     // console.log(template,"==template");
-    
+
     if (!template) return res.status(404).json({ message: 'Template not found.' });
 
     return res.status(200).json(template);

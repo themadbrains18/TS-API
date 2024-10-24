@@ -15,17 +15,22 @@ interface AuthenticatedRequest extends Request {
 export async function createTemplate(req: AuthenticatedRequest, res: Response) {
   try {
     // Parse and validate request data using DTO schema
-    const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
+    console.log("hererer", req.body);
+    // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
 
+    let creditqwqs = JSON.parse(req.body.credits)
+    console.log(creditqwqs,"==creditqwqs");
+    
+    
     const {
-      title, price, description, industryTypeId, templateTypeId,
-      subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails
-    } = validatedData;
+      name, dollarPrice, description, industryType, templateType,
+      templateSubCategory, softwareType, version, isPaid, seoTags, credits, techDetails
+    } = req.body;
 
     const userId = req.user?.id;
 
     // Validate required fields
-    if (!title || !price || !userId || !seoTags || !credits || !techDetails) {
+    if (!name ||  !userId || !seoTags || !credits || !techDetails) {
       return res.status(400).json({ message: 'Title, price, user ID, SEO tags, credits, and tech details are required.' });
     }
 
@@ -62,19 +67,19 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     // Create a new template
     const newTemplate = await prisma.template.create({
       data: {
-        title,
-        price,
+        title:name,
+        price:dollarPrice!=="undefined" ?Number(dollarPrice):0,
         description,
-        industryTypeId,
-        templateTypeId,
-        softwareTypeId,
-        subCategoryId,
+        industryTypeId:industryType[0].id,
+        templateTypeId:templateType,
+        softwareTypeId:softwareType,
+        subCategoryId:templateSubCategory,
         version,
-        isPaid,
+        isPaid:Boolean(isPaid),
         seoTags,
         userId,
         credits: {
-          create: credits.map((credit: any) => ({
+          create: creditqwqs.map((credit: any) => ({
             fonts: credit.fonts,
             images: credit.images,
             icons: credit.icons,
@@ -272,6 +277,31 @@ export async function getTemplates(req: Request, res: Response) {
 
 
 // Fetch Latest Templates
+export const getAllTemplates = async (req: Request, res: Response) => {
+  try {
+    const latestTemplates = await prisma.template.findMany({
+// include:{
+//   templateType:true
+// }
+      select: {
+        title:true,
+        version:true,
+        price:true,
+        // templateTypeId:true,
+        templateType:true,
+        id:true
+      },
+      orderBy: {
+        createdAt: 'desc',
+      }
+    });
+
+    return res.json({results:{ templates: latestTemplates, message:"data fecht success" }});
+  } catch (error) {
+    console.error("Error fetching latest templates:", error);
+    return res.status(500).json({ message: "Failed to fetch latest templates", error });
+  }
+};
 export const getLatestTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({

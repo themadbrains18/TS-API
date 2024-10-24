@@ -22,6 +22,7 @@ const upload = multer({
 export const uploadFiles = upload.fields([
   { name: 'sliderImages', maxCount: 10 },
   { name: 'previewImages', maxCount: 10 },
+  { name: 'previewMobileImages', maxCount: 10 },
   { name: 'sourceFiles', maxCount: 10 },
 ]);
 

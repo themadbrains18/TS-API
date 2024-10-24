@@ -33,7 +33,7 @@ model Otp {
 model Template {
   id          String   @id @default(cuid())
   title       String
-  price       Float
+  price       Float   @default(0)
   description String?  @db.Text // Optional description of the template
   imageUrl    String? // URL for the template image
   version     String? // URL for the template image

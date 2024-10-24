@@ -104,7 +104,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
     ]);
 
-    return res.status(201).json({ message: 'Template created successfully', template: newTemplate });
+    return res.status(201).json({ message: 'Template created successfully', template: newTemplate, uploaded:true });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       // Catch and handle validation errors

@@ -141,7 +141,7 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
 // Get templates with filters and pagination
 export async function getTemplates(req: Request, res: Response) {
   // console.log(req.query,"=req query");
-  
+
   try {
     const {
       industryTypeIds, // Can be string or array
@@ -157,7 +157,7 @@ export async function getTemplates(req: Request, res: Response) {
 
 
     // console.log(priceRanges,"==price ranges");
-    
+
 
     // Initialize filters object
     const filters: any = {};
@@ -269,6 +269,31 @@ export async function getTemplates(req: Request, res: Response) {
 
 
 // Fetch Latest Templates
+export const getAllTemplates = async (req: Request, res: Response) => {
+  try {
+    const latestTemplates = await prisma.template.findMany({
+// include:{
+//   templateType:true
+// }
+      select: {
+        title:true,
+        version:true,
+        price:true,
+        // templateTypeId:true,
+        templateType:true,
+        id:true
+      },
+      orderBy: {
+        createdAt: 'desc',
+      }
+    });
+
+    return res.json({results:{ templates: latestTemplates, message:"data fecht success" }});
+  } catch (error) {
+    console.error("Error fetching latest templates:", error);
+    return res.status(500).json({ message: "Failed to fetch latest templates", error });
+  }
+};
 export const getLatestTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
@@ -360,7 +385,7 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
 export async function getTemplateById(req: Request, res: Response) {
   const { id } = req.params;
 
-  
+
   try {
     const template = await prisma.template.findUnique({
       where: { id },
@@ -370,14 +395,14 @@ export async function getTemplateById(req: Request, res: Response) {
         previewImages: true,
         previewMobileImages: true,
         sourceFiles: true,
-        templateType:true,
-        subCategory:true,
-        user:true,
-        softwareType:true
+        templateType: true,
+        subCategory: true,
+        user: true,
+        softwareType: true
       },
     });
     // console.log(template,"==template");
-    
+
     if (!template) return res.status(404).json({ message: 'Template not found.' });
 
     return res.status(200).json(template);

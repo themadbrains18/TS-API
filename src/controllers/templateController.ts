@@ -104,7 +104,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
     ]);
 
-    return res.status(201).json({ message: 'Template created successfully', template: newTemplate });
+    return res.status(201).json({ message: 'Template created successfully', template: newTemplate,});
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       // Catch and handle validation errors
@@ -144,7 +144,7 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
 
 // Get templates with filters and pagination
 export async function getTemplates(req: Request, res: Response) {
-  // console.log(req.query,"=req query");
+  console.log(req.query,"=req query");
 
   try {
     const {
@@ -252,8 +252,13 @@ export async function getTemplates(req: Request, res: Response) {
         orderBy: { createdAt: 'desc' }, // Order by creation date
       }),
       prisma.template.count({
-        where: filters, // Count total templates matching filters
-      }),
+        where: {
+          ...filters,
+          subCategory: {
+            templateTypeId: templateTypeId, // Ensure subcategory matches template type
+          }
+        }}
+      ),
     ]);
 
     // Calculate total pages

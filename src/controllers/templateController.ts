@@ -22,14 +22,14 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
 
 
     const {
-      name, dollarPrice, description, industry, templateType,
-      templateSubCategory, softwareType, version, isPaid, seoTags, credits, techDetails
+      title, price, description, industry, templateTypeId,
+      subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails
     } = req.body;
 
     const userId = req.user?.id;
 
     // Validate required fields
-    if (!name || !userId || !seoTags || !credits || !techDetails) {
+    if (!title ||  !userId || !seoTags || !credits || !techDetails) {
       return res.status(400).json({ message: 'Title, price, user ID, SEO tags, credits, and tech details are required.' });
     }
 
@@ -66,15 +66,15 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     // Create a new template
     const newTemplate = await prisma.template.create({
       data: {
-        title: name,
-        price: (dollarPrice != "undefined" && isPaid === "true") ? Number(dollarPrice) : 0,
+        title,
         description,
-        industryTypeId: industry,
-        templateTypeId: templateType,
-        softwareTypeId: softwareType,
-        subCategoryId: templateSubCategory,
+        industryTypeId:industry,
+        templateTypeId,
+        softwareTypeId,
+        subCategoryId,
         version,
-        isPaid: (isPaid === "false" ? false : true),
+        price:(price!="undefined" && isPaid==="true") ?Number(price):0,
+        isPaid:(isPaid==="false"?false:true),
         seoTags,
         userId,
         credits: {
@@ -104,7 +104,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
     ]);
 
-    return res.status(201).json({ message: 'Template created successfully', template: newTemplate });
+    return res.status(201).json({ message: 'Template created successfully', template: newTemplate,});
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       // Catch and handle validation errors
@@ -151,7 +151,7 @@ export async function getTemplates(req: Request, res: Response) {
       industryTypeIds, // Can be string or array
       templateTypeId, // Can be string or array
       softwareTypeIds, // Can be string or array
-      subcategoryIds, // Can be string or array
+      subcategoryId, // Can be string or array
       isPaid,
       priceRanges, // Can be string or array
       search,
@@ -183,9 +183,9 @@ export async function getTemplates(req: Request, res: Response) {
       filters.templateTypeId = templateTypeId;
     }
     // Handle subcategory filter (multiple subcategories)
-    if (subcategoryIds) {
-      filters.subcategoryId = { in: handleArrayInput(subcategoryIds) };
-    }
+    // if (subcategoryIds) {
+    //   filters.subcategoryId = { in: handleArrayInput(subcategoryIds) };
+    // }
 
     // Handle software type filter (multiple software types)
     if (softwareTypeIds) {
@@ -225,9 +225,12 @@ export async function getTemplates(req: Request, res: Response) {
       prisma.template.findMany({
         where: {
           ...filters,
-          subCategory: {
-            templateTypeId: templateTypeId, // Ensure subcategory matches template type
-          }
+    
+            subCategory: {
+              templateTypeId: templateTypeId,   // Ensures it matches the template type
+              subcategoryId: subcategoryId,           // Additional filter to match category
+            }
+          
         },
         include: {
           credits: true,
@@ -411,7 +414,7 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
         },
       }
     )
-    return res.status(200).json(templates);
+    return res.status(200).json({results:{data:templates}});
   } catch (error: any) {
     return res.status(500).json({ message: "Failed to fetch templates by userID", error: error.message })
   }
@@ -422,7 +425,6 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
 export async function getTemplateById(req: Request, res: Response) {
   const { id } = req.params;
 
-
   try {
     const template = await prisma.template.findUnique({
       where: { id },
@@ -432,10 +434,11 @@ export async function getTemplateById(req: Request, res: Response) {
         previewImages: true,
         previewMobileImages: true,
         sourceFiles: true,
-        templateType: true,
-        subCategory: true,
-        user: true,
-        softwareType: true
+        user:{
+          select:{
+            name:true
+          }
+        }
       },
     });
     // console.log(template,"==template");
@@ -453,6 +456,10 @@ export async function getTemplateById(req: Request, res: Response) {
 export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
 
+  console.log(req.params,"==rew");
+  console.log(req.body,"==rew");
+  
+  let creditqwqs = JSON.parse(req.body.credits)
   try {
     // Find the existing template
     const existingTemplate = await prisma.template.findUnique({
@@ -469,12 +476,12 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       return res.status(404).json({ message: 'Template not found.' });
     }
     // Parse and validate request data using DTO schema
-    const validatedData = updateTemplateSchema.parse(JSON.parse(req.body.data));
+    // const validatedData = updateTemplateSchema.parse(JSON.parse(req.body.data));
 
     const {
-      title, price, description, industryTypeId, templateTypeId,
+      title, price, description, industry, templateTypeId,
       softwareTypeId, version, isPaid, seoTags, credits, techDetails
-    } = validatedData;
+    } = req.body;
 
     // Validate user ownership of the template
     if (existingTemplate.userId !== req.user?.id) {
@@ -514,23 +521,23 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       where: { id },
       data: {
         title,
-        price,
         description,
-        industryTypeId,
+        industryTypeId:industry,
         templateTypeId,
         softwareTypeId,
         version,
-        isPaid,
+        price:(price!="undefined" && isPaid==="true") ?Number(price):0,
+        isPaid:(isPaid==="false"?false:true),
         seoTags,
         techDetails,
         credits: {
-          updateMany: credits?.map((credit: any, index: number) => ({
+          updateMany: creditqwqs?.map((credit: any, index: number) => ({
             where: { id: existingTemplate.credits[index].id },
             data: {
               fonts: credit.fonts,
               images: credit.images,
               icons: credit.icons,
-              illustrations: credit.illustrations,
+              illustrations: credit.illustrations,     
             },
           })),
         },

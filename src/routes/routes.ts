@@ -4,7 +4,7 @@ import { validateData } from '../middlewares/zodValidationMiddleware';
 import { userLoginSchema, userSignUpSchema } from '../dto/user.dto';
 
 import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser } from '../controllers/authController';
-import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, } from '../controllers/templateController';
+import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, featureTemplates, } from '../controllers/templateController';
 import { createCredit, getCredits, updateCredit, deleteCredit, } from '../controllers/creditController';
 import { createTechnicalDetail, getTechnicalDetails, updateTechnicalDetail, deleteTechnicalDetail, } from '../controllers/technicalDetailController';
 import { authenticateToken } from '../middlewares/authMiddleware';
@@ -25,7 +25,7 @@ router.post('/resend-otp', resendOtp);
 router.post('/logout', logout);
 router.post('/forget-password', forgetPassword);
 router.post('/reset-password', resetPasswordWithOtp);
-router.get('/check-jwt',authenticateToken, checkUser);
+router.get('/check-jwt', authenticateToken, checkUser);
 
 
 // Template routes
@@ -33,6 +33,7 @@ router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, cr
 router.post('/templates/:id/download', authenticateToken, templateDownloads); // record a download for a template
 router.get('/templates', getTemplates); // Get all templates by pagination
 router.get('/all-templates', getAllTemplates); // Get all templates by pagination
+router.get('/feature-templates', featureTemplates); // Get Feature Templates take 6 
 router.get('/templates/latest', getLatestTemplates); // Get Latest templates
 router.get('/templates/popular', getPopularTemplates); // Get Popular templates
 router.get('/templates-by-userid', authenticateToken, getAllTemplatesByUserId); // Get all templates by UserID

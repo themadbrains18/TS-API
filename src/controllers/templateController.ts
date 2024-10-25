@@ -19,8 +19,8 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
 
     let creditqwqs = JSON.parse(req.body.credits)
-    
-    
+
+
     const {
       name, dollarPrice, description, industry, templateType,
       templateSubCategory, softwareType, version, isPaid, seoTags, credits, techDetails
@@ -29,7 +29,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     const userId = req.user?.id;
 
     // Validate required fields
-    if (!name ||  !userId || !seoTags || !credits || !techDetails) {
+    if (!name || !userId || !seoTags || !credits || !techDetails) {
       return res.status(400).json({ message: 'Title, price, user ID, SEO tags, credits, and tech details are required.' });
     }
 
@@ -66,15 +66,15 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     // Create a new template
     const newTemplate = await prisma.template.create({
       data: {
-        title:name,
-        price:(dollarPrice!="undefined" && isPaid==="true") ?Number(dollarPrice):0,
+        title: name,
+        price: (dollarPrice != "undefined" && isPaid === "true") ? Number(dollarPrice) : 0,
         description,
-        industryTypeId:industry,
-        templateTypeId:templateType,
-        softwareTypeId:softwareType,
-        subCategoryId:templateSubCategory,
+        industryTypeId: industry,
+        templateTypeId: templateType,
+        softwareTypeId: softwareType,
+        subCategoryId: templateSubCategory,
         version,
-        isPaid:(isPaid==="false"?false:true),
+        isPaid: (isPaid === "false" ? false : true),
         seoTags,
         userId,
         credits: {
@@ -144,7 +144,7 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
 
 // Get templates with filters and pagination
 export async function getTemplates(req: Request, res: Response) {
-  console.log(req.query,"=req query");
+  console.log(req.query, "=req query");
 
   try {
     const {
@@ -254,7 +254,8 @@ export async function getTemplates(req: Request, res: Response) {
           subCategory: {
             templateTypeId: templateTypeId, // Ensure subcategory matches template type
           }
-        }}
+        }
+      }
       ),
     ]);
 
@@ -281,28 +282,55 @@ export async function getTemplates(req: Request, res: Response) {
 export const getAllTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
-// include:{
-//   templateType:true
-// }
+      // include:{
+      //   templateType:true
+      // }
       select: {
-        title:true,
-        version:true,
-        price:true,
+        title: true,
+        version: true,
+        price: true,
         // templateTypeId:true,
-        templateType:true,
-        id:true
+        templateType: true,
+        id: true
       },
       orderBy: {
         createdAt: 'desc',
       }
     });
 
-    return res.json({results:{ templates: latestTemplates, message:"data fecht success" }});
+    return res.json({ results: { templates: latestTemplates, message: "data fecht success" } });
   } catch (error) {
     console.error("Error fetching latest templates:", error);
     return res.status(500).json({ message: "Failed to fetch latest templates", error });
   }
 };
+
+
+// Fetch Latest Templates
+export const featureTemplates = async (req: Request, res: Response) => {
+  try {
+    const featureTemplates = await prisma.template.findMany({
+      select: {
+        sliderImages : true,
+        title: true,
+        version: true,
+        price: true,
+        templateType: true,
+        id: true
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 6  // Limit to 6 templates
+    });
+
+    return res.json({ results: { templates: featureTemplates, message: "data fecht success" } });
+  } catch (error) {
+    console.error("Error fetching feature templates:", error);
+    return res.status(500).json({ message: "Failed to fetch feature Templates ", error });
+  }
+};
+
 export const getLatestTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({

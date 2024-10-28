@@ -306,9 +306,12 @@ export const getAllTemplates = async (req: Request, res: Response) => {
 };
 
 
+
 // Fetch Latest Templates
 export const featureTemplates = async (req: Request, res: Response) => {
   try {
+    console.log("here");
+    
     const featureTemplates = await prisma.template.findMany({
       select: {
         sliderImages : true,

@@ -25,6 +25,23 @@ export const uploadFiles = upload.fields([
   { name: 'previewMobileImages', maxCount: 10 },
   { name: 'sourceFiles', maxCount: 10 },
 ]);
+// Multer configuration for single image upload with 2 MB limit and image type restrictions
+const uploadSingleImage = multer({
+  storage,
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2MB limit for single images
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!allowedImageTypes.includes(file.mimetype)) {
+      return cb(new Error('Only JPG, JPEG, and PNG images are allowed.'));
+    }
+    cb(null, true);
+  },
+});
+
+// Middleware to handle a single image upload
+export const uploadSingleImageFile = uploadSingleImage.single('image');
 
 // Custom error handler for Multer
 export const multerErrorHandler = (err: any, req: any, res: any, next: any) => {

@@ -357,20 +357,33 @@ export const getLatestTemplates = async (req: Request, res: Response) => {
   }
 };
 
-// Record template download
 export const templateDownloads = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const { userId, email } = req.body; // Expecting `userId` for logged-in users and `email` for unregistered users
+
   try {
+    // Update the template's download count
     const template = await prisma.template.update({
       where: { id },
       data: { downloads: { increment: 1 } },
     });
+
+    // Record download history based on whether userId or email is provided
+    await prisma.downloadHistory.create({
+      data: {
+        templateId: id,
+        userId: userId || null, // Use null if user is not logged in
+        email: email || '',      // Ensure email is provided for unregistered users
+        downloadedAt: new Date(),
+      },
+    });
+
     res.json({ message: 'Download recorded', template });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Failed to record download', error });
   }
-}
-
+};
 // Fetch Popular Templates
 export const getPopularTemplates = async (req: Request, res: Response) => {
   try {
@@ -434,6 +447,7 @@ export async function getTemplateById(req: Request, res: Response) {
         previewImages: true,
         previewMobileImages: true,
         sourceFiles: true,
+        softwareType:true,
         user:{
           select:{
             name:true

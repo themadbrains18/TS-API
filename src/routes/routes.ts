@@ -1,9 +1,9 @@
-import { multerErrorHandler, uploadFiles } from './../middlewares/multerMiddleware';
+import { multerErrorHandler, uploadFiles, uploadSingleImageFile } from './../middlewares/multerMiddleware';
 import { Router } from 'express';
 import { validateData } from '../middlewares/zodValidationMiddleware';
 import { userLoginSchema, userSignUpSchema } from '../dto/user.dto';
 
-import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser } from '../controllers/authController';
+import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser, updateUserDetails, updateUserImage } from '../controllers/authController';
 import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, featureTemplates, } from '../controllers/templateController';
 import { createCredit, getCredits, updateCredit, deleteCredit, } from '../controllers/creditController';
 import { createTechnicalDetail, getTechnicalDetails, updateTechnicalDetail, deleteTechnicalDetail, } from '../controllers/technicalDetailController';
@@ -26,7 +26,9 @@ router.post('/logout', logout);
 router.post('/forget-password', forgetPassword);
 router.post('/reset-password', resetPasswordWithOtp);
 router.get('/check-jwt', authenticateToken, checkUser);
+router.patch('/update-details', updateUserDetails);
 
+router.patch('/user/update-image',authenticateToken, uploadSingleImageFile,multerErrorHandler, updateUserImage);
 
 // Template routes
 router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, createTemplate); // Create a new template (with file upload)
@@ -40,6 +42,7 @@ router.get('/templates-by-userid', authenticateToken, getAllTemplatesByUserId); 
 router.get('/templates-by-id/:id', getTemplateById); // Get a specific template by ID
 router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken, updateTemplate); // Update a specific template by ID
 router.delete('/templates/:id', validateData(deleteTemplateSchema), authenticateToken, deleteTemplate); // Delete a specific template by ID
+
 
 // Template Type routes
 router.post('/template-types', authenticateToken, createTemplateType); // Create a new TemplateType

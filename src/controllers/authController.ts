@@ -5,6 +5,7 @@ import prisma from '../server';
 import crypto from 'crypto';
 import { User, Otp } from '@prisma/client';
 import { sendOtpEmail } from '../services/nodeMailer';
+import { uploadFileToFirebase } from '../services/fileService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 const TOKEN_EXPIRY = '8h'; // JWT Token expires in 8 hours
@@ -348,5 +349,100 @@ export async function checkUser(req: Request, res: Response) {
     return res.status(200).json({ res, user });
   } catch (error: any) {
     return res.status(500).json({ res, error: error.message });
+  }
+}
+
+// API to update user details with OTP verification for email change
+export async function updateUserDetails(req: Request, res: Response) {
+  const { userId, name, number, currentEmail, newEmail, otp } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ message: "User ID is required" });
+  }
+
+  try {
+    // Fetch the current user data
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Handle name update if provided
+    const updatedData: Partial<User> = {};
+    if (name) updatedData.name = name;
+    if (number) updatedData.number = number;
+
+    // Email Update: OTP Verification Flow
+    if (newEmail && otp) {
+      // Step 1: Verify OTP on current email
+      const currentOtp = await prisma.otp.findUnique({ where: { email: currentEmail } });
+      if (!currentOtp || currentOtp.code !== otp || currentOtp.expiresAt < new Date()) {
+        return res.status(400).json({ message: "Invalid or expired OTP on current email" });
+      }
+
+      // OTP verified on current email, proceed to generate OTP for new email
+      const newOtpCode = generateOtp();
+      const expiresAt = otpExpiryTime();
+      await prisma.otp.upsert({
+        where: { email: newEmail },
+        update: { code: newOtpCode, expiresAt },
+        create: { email: newEmail, code: newOtpCode, expiresAt },
+      });
+
+      await sendOtpEmail(newEmail, newOtpCode);
+      return res.status(200).json({ message: "OTP sent to new email. Please verify to update." });
+    }
+
+    // Final Step: If OTP for new email is verified, update user email
+    if (newEmail && !otp) {
+      const newOtpRecord = await prisma.otp.findUnique({ where: { email: newEmail } });
+      if (!newOtpRecord || newOtpRecord.code !== otp || newOtpRecord.expiresAt < new Date()) {
+        return res.status(400).json({ message: "Invalid or expired OTP on new email" });
+      }
+
+      // If OTP is valid, update the email in the user record
+      updatedData.email = newEmail;
+    }
+
+    // Update the user record with any other provided details
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updatedData,
+    });
+
+    return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
+  } catch (error: any) {
+    console.error("Error updating user details:", error);
+    return res.status(500).json({ message: "Failed to update user details", error: error.message });
+  }
+}
+
+
+
+export async function updateUserImage(req: Request, res: Response) {
+  try {
+    const userId = req.user?.id;
+
+    // Check for user ID and file presence
+    if (!userId || !req.file) {
+      return res.status(400).json({ message: 'User ID and image file are required.' });
+    }
+
+    // Upload new profile image to Firebase
+    const profileImageUrl = await uploadFileToFirebase(req.file, 'profileImages');
+
+    // Update the user's profile image in the database
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { profileImg:profileImageUrl }, // Store URL in the user's profile image field
+    });
+
+    return res.status(200).json({
+      message: 'Profile image updated successfully',
+      user: { id: updatedUser.id, profileImageUrl: updatedUser.profileImg },
+    });
+  } catch (error: any) {
+    console.error('Error updating profile image:', error);
+    return res.status(500).json({ message: 'Failed to update profile image', error: error.message });
   }
 }

@@ -3,6 +3,8 @@ import prisma from '../server';
 import { uploadFileToFirebase, deleteFileFromFirebase } from '../services/fileService';
 import { createTemplateSchema, updateTemplateSchema } from '../dto/template.dto';
 import { z } from 'zod';
+import { sendTemplateEmail } from '../services/nodeMailer';
+
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -144,24 +146,20 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
 
 // Get templates with filters and pagination
 export async function getTemplates(req: Request, res: Response) {
-  console.log(req.query, "=req query");
+  console.log(req.query.subCatId, "=req query");
 
   try {
     const {
       industryTypeIds, // Can be string or array
       templateTypeId, // Can be string or array
       softwareTypeIds, // Can be string or array
-      subcategoryId, // Can be string or array
+      subCatId, // Single string
       isPaid,
       priceRanges, // Can be string or array
       search,
       page = 1,
       limit = 12,
     } = req.query;
-
-
-    // console.log(priceRanges,"==price ranges");
-
 
     // Initialize filters object
     const filters: any = {};
@@ -180,12 +178,8 @@ export async function getTemplates(req: Request, res: Response) {
 
     // Handle template type filter (multiple types)
     if (templateTypeId) {
-      filters.templateTypeId = templateTypeId;
+      filters.templateTypeId = { in: handleArrayInput(templateTypeId) };
     }
-    // Handle subcategory filter (multiple subcategories)
-    // if (subcategoryIds) {
-    //   filters.subcategoryId = { in: handleArrayInput(subcategoryIds) };
-    // }
 
     // Handle software type filter (multiple software types)
     if (softwareTypeIds) {
@@ -220,16 +214,19 @@ export async function getTemplates(req: Request, res: Response) {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
+    // Prepare subCategory filter
+    const subCategoryFilter: any = {};
+    if (subCatId) {
+      subCategoryFilter.subCategoryId = subCatId; // Use single value directly
+    }
+
     // Fetch templates with filters, pagination, and relations
     const [templates, totalTemplates] = await Promise.all([
       prisma.template.findMany({
         where: {
           ...filters,
-    
-            subCategory: {
-              templateTypeId: templateTypeId,   // Ensures it matches the template type
-              subcategoryId: subcategoryId,           // Additional filter to match category
-            }
+          ...(templateTypeId ? { templateTypeId: { in: handleArrayInput(templateTypeId) } } : {}),
+          ...(subCatId ? subCategoryFilter : {}),
           
         },
         include: {
@@ -254,12 +251,10 @@ export async function getTemplates(req: Request, res: Response) {
       prisma.template.count({
         where: {
           ...filters,
-          subCategory: {
-            templateTypeId: templateTypeId, // Ensure subcategory matches template type
-          }
+          ...(templateTypeId ? { templateTypeId: { in: handleArrayInput(templateTypeId) } } : {}),
+          ...(subCatId ? subCategoryFilter : {}),
         }
-      }
-      ),
+      }),
     ]);
 
     // Calculate total pages
@@ -279,6 +274,7 @@ export async function getTemplates(req: Request, res: Response) {
     return res.status(500).json({ message: 'Failed to fetch templates', error: error.message });
   }
 }
+
 
 
 // Fetch Latest Templates
@@ -357,11 +353,49 @@ export const getLatestTemplates = async (req: Request, res: Response) => {
   }
 };
 
+
 export const templateDownloads = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { userId, email } = req.body; // Expecting `userId` for logged-in users and `email` for unregistered users
+  const { userId, email,url } = req.body; // Expecting `userId` for logged-in users and `email` for unregistered users
 
   try {
+    // Check if userId is provided for logged-in users
+    const templateData:any= await prisma.template.findFirst({
+      where:{id:id}
+    })
+    if (userId) {
+      const user:any = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      // Check if user has free downloads left
+      if (user && user.freeDownloads > 0) {
+        // Decrement the user's free downloads count
+        await prisma.user.update({
+          where: { id: userId },
+          data: { freeDownloads: user.freeDownloads - 1 },
+        });
+
+        // Send email notification
+        await sendTemplateEmail(user.email,url,templateData?.title,user?.name)
+      
+      } else {
+        return res.status(403).json({ message: 'No free downloads available.' });
+      }
+    } else if (!userId && email) {
+      // Logic for unregistered users (e.g., tracking downloads by email)
+      // Send email notification
+      
+      const downloadsCount = await prisma.downloadHistory.count({
+        where: { email: req.body.email }, // Assume email is passed in body
+      });
+      
+      if (downloadsCount >= 3) {
+        return res.status(403).json({ message: "Limit of 3 free downloads reached." });
+      }
+      await sendTemplateEmail(email,url,templateData?.title,email)
+    }
+
     // Update the template's download count
     const template = await prisma.template.update({
       where: { id },
@@ -378,7 +412,7 @@ export const templateDownloads = async (req: Request, res: Response) => {
       },
     });
 
-    res.json({ message: 'Download recorded', template });
+    res.json({ message: 'Download recorded', results:template});
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to record download', error });

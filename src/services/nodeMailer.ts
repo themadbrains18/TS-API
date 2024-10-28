@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import FileTemplate from '../email-template/fileTemplate';
 
 // Configure Nodemailer transporter
 const transporter = nodemailer.createTransport({
@@ -20,3 +21,17 @@ export async function sendOtpEmail(email: string, otp: string): Promise<void> {
 
   await transporter.sendMail(mailOptions);
 }
+// Function to send OTP email
+export async function sendTemplateEmail(email: string, url: string, templateName: string, name: string | ""): Promise<void> {
+
+  const emailTemplate = FileTemplate(name, url, templateName);
+  const mailOptions = {
+    from: process.env.SMTP_USERNAME,
+    to: email,
+    subject: 'Template Download Successful',
+    html: emailTemplate.html,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
+

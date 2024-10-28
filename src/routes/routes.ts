@@ -32,7 +32,7 @@ router.patch('/user/update-image',authenticateToken, uploadSingleImageFile,multe
 
 // Template routes
 router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, createTemplate); // Create a new template (with file upload)
-router.post('/templates/:id/download', authenticateToken, templateDownloads); // record a download for a template
+router.post('/templates/:id/download', templateDownloads); // record a download for a template
 router.get('/templates', getTemplates); // Get all templates by pagination
 router.get('/all-templates', getAllTemplates); // Get all templates by pagination
 router.get('/feature-templates', featureTemplates); // Get Feature Templates take 6 

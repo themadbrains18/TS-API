@@ -38,7 +38,8 @@ router.get('/all-templates', getAllTemplates); // Get all templates by paginatio
 router.get('/feature-templates', featureTemplates); // Get Feature Templates take 6 
 router.get('/templates/latest', getLatestTemplates); // Get Latest templates
 router.get('/templates/popular', getPopularTemplates); // Get Popular templates
-router.get('/templates-by-userid', authenticateToken, getAllTemplatesByUserId); // Get all templates by UserID
+router.get('/dashboard/templates-by-userid', authenticateToken, getAllTemplatesByUserId); // Get all templates by UserID
+router.get('/templates-by-userid/:id', getAllTemplatesByUserId); // Get all templates by UserID
 router.get('/templates-by-id/:id', getTemplateById); // Get a specific template by ID
 router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken, updateTemplate); // Update a specific template by ID
 router.delete('/templates/:id', validateData(deleteTemplateSchema), authenticateToken, deleteTemplate); // Delete a specific template by ID

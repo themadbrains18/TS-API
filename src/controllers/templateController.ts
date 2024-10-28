@@ -241,6 +241,7 @@ export async function getTemplates(req: Request, res: Response) {
           user: {
             select: {
               name: true,
+              id:true
             },
           },
         },
@@ -446,9 +447,14 @@ export const getPopularTemplates = async (req: Request, res: Response) => {
 // Get all templates by userID
 export async function getAllTemplatesByUserId(req: Request, res: Response) {
   try {
+
+    let id= req.params.id || req.user?.id
+    console.log(id,"==is");
+    
     const templates = await prisma.template.findMany(
       {
-        where: { userId: req.user?.id },
+
+        where: { userId:id },
         include: {
           templateType: true,
           softwareType: true,
@@ -472,6 +478,8 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
 export async function getTemplateById(req: Request, res: Response) {
   const { id } = req.params;
 
+
+
   try {
     const template = await prisma.template.findUnique({
       where: { id },
@@ -484,7 +492,8 @@ export async function getTemplateById(req: Request, res: Response) {
         softwareType:true,
         user:{
           select:{
-            name:true
+            name:true,
+            id:true
           }
         }
       },

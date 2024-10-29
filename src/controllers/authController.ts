@@ -342,7 +342,7 @@ export async function checkUser(req: Request, res: Response) {
   try {
 
     let user = await prisma.user.findUnique({
-      where: { id: req.body.id },
+      where: { id: req?.user?.id },
 
     });
 

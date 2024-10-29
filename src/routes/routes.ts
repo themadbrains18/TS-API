@@ -26,9 +26,9 @@ router.post('/logout', logout);
 router.post('/forget-password', forgetPassword);
 router.post('/reset-password', resetPasswordWithOtp);
 router.get('/check-jwt', authenticateToken, checkUser);
-router.patch('/update-details', updateUserDetails);
+router.put('/update-details', updateUserDetails);
 
-router.patch('/user/update-image',authenticateToken, uploadSingleImageFile,multerErrorHandler, updateUserImage);
+router.put('/user/update-image', authenticateToken, uploadSingleImageFile, multerErrorHandler, updateUserImage);
 
 // Template routes
 router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, createTemplate); // Create a new template (with file upload)
@@ -43,7 +43,6 @@ router.get('/templates-by-userid/:id', getAllTemplatesByUserId); // Get all temp
 router.get('/templates-by-id/:id', getTemplateById); // Get a specific template by ID
 router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken, updateTemplate); // Update a specific template by ID
 router.delete('/templates/:id', validateData(deleteTemplateSchema), authenticateToken, deleteTemplate); // Delete a specific template by ID
-
 
 // Template Type routes
 router.post('/template-types', authenticateToken, createTemplateType); // Create a new TemplateType

@@ -429,7 +429,10 @@ export async function updateUserImage(req: Request, res: Response) {
     }
 
     // Upload new profile image to Firebase
-    const profileImageUrl = await uploadFileToFirebase(req.file, 'profileImages');
+    const profileImageUrl = await uploadFileToFirebase(req.file, 'profileImg');
+
+    console.log(profileImageUrl,"=profileImageUrl");
+    
 
     // Update the user's profile image in the database
     const updatedUser = await prisma.user.update({

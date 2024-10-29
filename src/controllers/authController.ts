@@ -352,6 +352,20 @@ export async function checkUser(req: Request, res: Response) {
   }
 }
 
+export async function getUserDownloads(req: Request, res: Response) {
+  try {
+let userid= req?.user?.id ?? ""
+    let user = await prisma.downloadHistory.findMany({
+      where: { userId: userid },
+
+    });
+
+    return res.status(200).json({ res, user });
+  } catch (error: any) {
+    return res.status(500).json({ res, error: error.message });
+  }
+}
+
 // API to update user details with OTP verification for email change
 export async function updateUserDetails(req: Request, res: Response) {
   const { userId, name, number, currentEmail, newEmail, otp } = req.body;

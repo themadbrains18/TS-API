@@ -31,7 +31,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     const userId = req.user?.id;
 
     // Validate required fields
-    if (!title ||  !userId || !seoTags || !credits || !techDetails) {
+    if (!title || !userId || !seoTags || !credits || !techDetails) {
       return res.status(400).json({ message: 'Title, price, user ID, SEO tags, credits, and tech details are required.' });
     }
 
@@ -70,13 +70,13 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       data: {
         title,
         description,
-        industryTypeId:industry,
+        industryTypeId: industry,
         templateTypeId,
         softwareTypeId,
         subCategoryId,
         version,
-        price:(price!="undefined" && isPaid==="true") ?Number(price):0,
-        isPaid:(isPaid==="false"?false:true),
+        price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
+        isPaid: (isPaid === "false" ? false : true),
         seoTags,
         userId,
         credits: {
@@ -106,7 +106,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
     ]);
 
-    return res.status(201).json({ message: 'Template created successfully', template: newTemplate,});
+    return res.status(201).json({ message: 'Template created successfully', template: newTemplate, });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       // Catch and handle validation errors
@@ -227,7 +227,7 @@ export async function getTemplates(req: Request, res: Response) {
           ...filters,
           ...(templateTypeId ? { templateTypeId: { in: handleArrayInput(templateTypeId) } } : {}),
           ...(subCatId ? subCategoryFilter : {}),
-          
+
         },
         include: {
           credits: true,
@@ -241,7 +241,7 @@ export async function getTemplates(req: Request, res: Response) {
           user: {
             select: {
               name: true,
-              id:true
+              id: true
             },
           },
         },
@@ -311,10 +311,10 @@ export const getAllTemplates = async (req: Request, res: Response) => {
 export const featureTemplates = async (req: Request, res: Response) => {
   try {
     console.log("here");
-    
+
     const featureTemplates = await prisma.template.findMany({
       select: {
-        sliderImages : true,
+        sliderImages: true,
         title: true,
         version: true,
         price: true,
@@ -360,15 +360,15 @@ export const getLatestTemplates = async (req: Request, res: Response) => {
 
 export const templateDownloads = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { userId, email,url } = req.body; // Expecting `userId` for logged-in users and `email` for unregistered users
+  const { userId, email, url } = req.body; // Expecting `userId` for logged-in users and `email` for unregistered users
 
   try {
     // Check if userId is provided for logged-in users
-    const templateData:any= await prisma.template.findFirst({
-      where:{id:id}
+    const templateData: any = await prisma.template.findFirst({
+      where: { id: id }
     })
     if (userId) {
-      const user:any = await prisma.user.findUnique({
+      const user: any = await prisma.user.findUnique({
         where: { id: userId },
       });
 
@@ -381,23 +381,23 @@ export const templateDownloads = async (req: Request, res: Response) => {
         });
 
         // Send email notification
-        await sendTemplateEmail(user.email,url,templateData?.title,user?.name)
-      
+        await sendTemplateEmail(user.email, url, templateData?.title, user?.name)
+
       } else {
         return res.status(403).json({ message: 'No free downloads available.' });
       }
     } else if (!userId && email) {
       // Logic for unregistered users (e.g., tracking downloads by email)
       // Send email notification
-      
+
       const downloadsCount = await prisma.downloadHistory.count({
         where: { email: req.body.email }, // Assume email is passed in body
       });
-      
+
       if (downloadsCount >= 3) {
         return res.status(403).json({ message: "Limit of 3 free downloads reached." });
       }
-      await sendTemplateEmail(email,url,templateData?.title,email)
+      await sendTemplateEmail(email, url, templateData?.title, email)
     }
 
     // Update the template's download count
@@ -416,7 +416,7 @@ export const templateDownloads = async (req: Request, res: Response) => {
       },
     });
 
-    res.json({ message: 'Download recorded', results:template});
+    res.json({ message: 'Download recorded', results: template });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to record download', error });
@@ -451,13 +451,13 @@ export const getPopularTemplates = async (req: Request, res: Response) => {
 export async function getAllTemplatesByUserId(req: Request, res: Response) {
   try {
 
-    let id= req.params.id || req.user?.id
-    console.log(id,"==is");
-    
+    let id = req.params.id || req.user?.id
+    console.log(id, "==is");
+
     const templates = await prisma.template.findMany(
       {
 
-        where: { userId:id },
+        where: { userId: id },
         include: {
           templateType: true,
           softwareType: true,
@@ -470,7 +470,7 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
         },
       }
     )
-    return res.status(200).json({results:{data:templates}});
+    return res.status(200).json({ results: { data: templates } });
   } catch (error: any) {
     return res.status(500).json({ message: "Failed to fetch templates by userID", error: error.message })
   }
@@ -492,11 +492,11 @@ export async function getTemplateById(req: Request, res: Response) {
         previewImages: true,
         previewMobileImages: true,
         sourceFiles: true,
-        softwareType:true,
-        user:{
-          select:{
-            name:true,
-            id:true
+        softwareType: true,
+        user: {
+          select: {
+            name: true,
+            id: true
           }
         }
       },
@@ -510,15 +510,44 @@ export async function getTemplateById(req: Request, res: Response) {
     return res.status(500).json({ message: 'Failed to fetch template', error: error.message });
   }
 }
+// Get a single template by title
+export async function getTemplateByTitle(req: Request, res: Response) {
+  const query = typeof req.query.query === 'string' ? req.query.query : undefined;
+  const subCategoryId = typeof req.query.subCategoryId === 'string' ? req.query.subCategoryId : undefined;
+console.log(subCategoryId,"==jhkjhkjh", query);
+
+  try {
+    const results = await prisma.template.findMany({
+      where: {
+        AND: [
+          query ? { title: { contains: query } } : {}, // Apply title filter if query is valid
+          subCategoryId ? { subCategoryId } : {}, // Apply subCategoryId filter if valid
+        ],
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        imageUrl: true,
+        price: true,
+      },
+    });
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error('Search API error:', error);
+    res.status(500).json({ message: 'Error searching templates' });
+  }
+}
 
 
 // Update an existing template
 export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
 
-  console.log(req.params,"==rew");
-  console.log(req.body,"==rew");
-  
+  console.log(req.params, "==rew");
+  console.log(req.body, "==rew");
+
   let creditqwqs = JSON.parse(req.body.credits)
   try {
     // Find the existing template
@@ -582,12 +611,12 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       data: {
         title,
         description,
-        industryTypeId:industry,
+        industryTypeId: industry,
         templateTypeId,
         softwareTypeId,
         version,
-        price:(price!="undefined" && isPaid==="true") ?Number(price):0,
-        isPaid:(isPaid==="false"?false:true),
+        price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
+        isPaid: (isPaid === "false" ? false : true),
         seoTags,
         techDetails,
         credits: {
@@ -597,7 +626,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
               fonts: credit.fonts,
               images: credit.images,
               icons: credit.icons,
-              illustrations: credit.illustrations,     
+              illustrations: credit.illustrations,
             },
           })),
         },

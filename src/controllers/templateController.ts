@@ -319,7 +319,8 @@ export const featureTemplates = async (req: Request, res: Response) => {
         version: true,
         price: true,
         templateType: true,
-        id: true
+        id: true,
+        softwareType:true
       },
       orderBy: {
         createdAt: 'desc',

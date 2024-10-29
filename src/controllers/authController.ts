@@ -358,6 +358,62 @@ export async function checkUser(req: Request, res: Response) {
   }
 }
 
+export async function getUserDownloads(req: Request, res: Response) {
+  try {
+    // Confirm if user information is populated in the request object
+    if (!req.user || !req.user.id) {
+      console.error("User not authenticated or user ID missing");
+      return res.status(401).json({ message: "Unauthorized: User not authenticated" });
+    }
+
+    const userId = req.user.id;
+    const page = parseInt(req.query.page as string) || 1; // Default to page 1
+    const limit = 6; // Items per page
+    const offset = (page - 1) * limit;
+
+    console.log(`Fetching download history for user ID: ${userId}, page: ${page}, limit: ${limit}`);
+
+    // Fetch total count for pagination
+    const totalCount = await prisma.downloadHistory.count({
+      where: { userId },
+    });
+
+    // Fetch the download history with pagination
+    const userDownloads = await prisma.downloadHistory.findMany({
+      where: { userId },
+      include: {
+        template: {
+          select: {
+            title: true,
+            price: true,
+            sliderImages: true,
+            sourceFiles: true,
+          },
+        },
+      },
+      skip: offset,
+      take: limit,
+    });
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return res.status(200).json({
+      downloads: userDownloads,
+      pagination: {
+        page,
+        limit,
+        totalPages,
+        totalCount,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error fetching user downloads:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
+
+
 // API to update user details with OTP verification for email change
 export async function updateUserDetails(req: Request, res: Response) {
   const { userId, name, number, currentEmail, newEmail, otp } = req.body;

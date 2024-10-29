@@ -89,15 +89,15 @@ export async function register(req: Request, res: Response) {
       }
     }
 
-  
+
 
     return res.status(201).json({
-    results: { message: 'User registered successfully. OTP sent to email.', otp: true }
-  });
-} catch (error: any) {
-  console.error(error);
-  return res.status(500).json({ message: 'Registration failed', error: error.message });
-}
+      results: { message: 'User registered successfully. OTP sent to email.', otp: true }
+    });
+  } catch (error: any) {
+    console.error(error);
+    return res.status(500).json({ message: 'Registration failed', error: error.message });
+  }
 }
 
 
@@ -142,11 +142,13 @@ export async function login(req: Request, res: Response) {
         const token = generateToken(user.id);
 
         // Send response with token (to be used in subsequent requests) and OTP verification requirement message
-        return res.status(200).json({results:{
-          message: 'Login successfull.',
-          token,
-          data: { id: user.id, email: user.email, role: user.role, name:user.name }
-        }});
+        return res.status(200).json({
+          results: {
+            message: 'Login successfull.',
+            token,
+            data: { id: user.id, email: user.email, role: user.role, name: user.name }
+          }
+        });
       } else {
         return res.status(verificationResponse.status).json(verificationResponse.message);
       }
@@ -339,11 +341,15 @@ export async function resendOtp(req: Request, res: Response) {
 
 
 export async function checkUser(req: Request, res: Response) {
+
   try {
-
+    // Confirm if user information is populated in the request object
+    if (!req.user || !req.user.id) {
+      console.error("User not authenticated or user ID missing");
+      return res.status(401).json({ message: "Unauthorized: User not authenticated" });
+    }
     let user = await prisma.user.findUnique({
-      where: { id: req?.user?.id },
-
+      where: { id: JSON.stringify(req.user.id) },
     });
 
     return res.status(200).json({ res, user });
@@ -354,17 +360,59 @@ export async function checkUser(req: Request, res: Response) {
 
 export async function getUserDownloads(req: Request, res: Response) {
   try {
-let userid= req?.user?.id ?? ""
-    let user = await prisma.downloadHistory.findMany({
-      where: { userId: userid },
+    // Confirm if user information is populated in the request object
+    if (!req.user || !req.user.id) {
+      console.error("User not authenticated or user ID missing");
+      return res.status(401).json({ message: "Unauthorized: User not authenticated" });
+    }
 
+    const userId = req.user.id;
+    const page = parseInt(req.query.page as string) || 1; // Default to page 1
+    const limit = 6; // Items per page
+    const offset = (page - 1) * limit;
+
+    console.log(`Fetching download history for user ID: ${userId}, page: ${page}, limit: ${limit}`);
+
+    // Fetch total count for pagination
+    const totalCount = await prisma.downloadHistory.count({
+      where: { userId },
     });
 
-    return res.status(200).json({ res, user });
+    // Fetch the download history with pagination
+    const userDownloads = await prisma.downloadHistory.findMany({
+      where: { userId },
+      include: {
+        template: {
+          select: {
+            title: true,
+            price: true,
+            sliderImages: true,
+            sourceFiles: true,
+          },
+        },
+      },
+      skip: offset,
+      take: limit,
+    });
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return res.status(200).json({
+      downloads: userDownloads,
+      pagination: {
+        page,
+        limit,
+        totalPages,
+        totalCount,
+      },
+    });
   } catch (error: any) {
-    return res.status(500).json({ res, error: error.message });
+    console.error("Error fetching user downloads:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 }
+
 
 // API to update user details with OTP verification for email change
 export async function updateUserDetails(req: Request, res: Response) {
@@ -443,12 +491,15 @@ export async function updateUserImage(req: Request, res: Response) {
     }
 
     // Upload new profile image to Firebase
-    const profileImageUrl = await uploadFileToFirebase(req.file, 'profileImages');
+    const profileImageUrl = await uploadFileToFirebase(req.file, 'profileImg');
+
+    console.log(profileImageUrl, "=profileImageUrl");
+
 
     // Update the user's profile image in the database
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { profileImg:profileImageUrl }, // Store URL in the user's profile image field
+      data: { profileImg: profileImageUrl }, // Store URL in the user's profile image field
     });
 
     return res.status(200).json({

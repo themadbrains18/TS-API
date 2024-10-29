@@ -5,7 +5,6 @@ import prisma from '../server';
 // Create a new TemplateType
 export const createTemplateType = async (req: Request, res: Response) => {
   const { name } = req.body;
-
   try {
     const newTemplateType = await prisma.templateType.create({
       data: { name },

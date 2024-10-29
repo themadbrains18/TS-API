@@ -29,7 +29,7 @@ router.get('/get-user', authenticateToken, checkUser);
 router.get('/get-user-downloads', authenticateToken, getUserDownloads);
 router.patch('/update-details',authenticateToken, updateUserDetails);
 
-router.patch('/user/update-image',authenticateToken, uploadSingleImageFile,multerErrorHandler, updateUserImage);
+router.put('/user/update-image', authenticateToken, uploadSingleImageFile, multerErrorHandler, updateUserImage);
 
 // Template routes
 router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, createTemplate); // Create a new template (with file upload)
@@ -45,7 +45,6 @@ router.get('/templates-by-id/:id', getTemplateById); // Get a specific template 
 router.get('/templates/search', getTemplateByTitle); // Get a specific template by ID
 router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken, updateTemplate); // Update a specific template by ID
 router.delete('/templates/:id', validateData(deleteTemplateSchema), authenticateToken, deleteTemplate); // Delete a specific template by ID
-
 
 // Template Type routes
 router.post('/template-types', authenticateToken, createTemplateType); // Create a new TemplateType

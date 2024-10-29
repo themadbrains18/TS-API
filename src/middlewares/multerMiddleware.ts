@@ -41,7 +41,7 @@ const uploadSingleImage = multer({
 });
 
 // Middleware to handle a single image upload
-export const uploadSingleImageFile = uploadSingleImage.single('image');
+export const uploadSingleImageFile = uploadSingleImage.single('profileImg');
 
 // Custom error handler for Multer
 export const multerErrorHandler = (err: any, req: any, res: any, next: any) => {

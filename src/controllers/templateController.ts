@@ -146,7 +146,6 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
 
 // Get templates with filters and pagination
 export async function getTemplates(req: Request, res: Response) {
-  console.log(req.query.subCatId, "=req query");
 
   try {
     const {

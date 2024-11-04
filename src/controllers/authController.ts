@@ -227,8 +227,6 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
-
-
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -339,7 +337,6 @@ export async function resendOtp(req: Request, res: Response) {
   }
 }
 
-
 export async function checkUser(req: Request, res: Response) {
 
   try {
@@ -348,13 +345,14 @@ export async function checkUser(req: Request, res: Response) {
       console.error("User not authenticated or user ID missing");
       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
     }
+    const userId = req.user.id;
     let user = await prisma.user.findUnique({
-      where: { id: JSON.stringify(req.user.id) },
+      where: { id: userId },
     });
 
-    return res.status(200).json({ res, user });
+    return res.status(200).json({ user });
   } catch (error: any) {
-    return res.status(500).json({ res, error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -416,67 +414,71 @@ export async function getUserDownloads(req: Request, res: Response) {
 
 // API to update user details with OTP verification for email change
 export async function updateUserDetails(req: Request, res: Response) {
-  const { userId, name, number, currentEmail, newEmail, otp } = req.body;
+  const { name, number, currentEmail, newEmail, otp } = req.body;
+  console.log(req.body, "user")
 
-  if (!userId) {
+  if (!req.user || !req.user.id) {
     return res.status(400).json({ message: "User ID is required" });
   }
 
-  try {
-    // Fetch the current user data
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+  let id = req.user?.id
+  
+    try {
+      // Fetch the current user data
+      const user = await prisma.user.findUnique({ where: { id: id } });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+
+  // Handle name update if provided
+  const updatedData: Partial<User> = {};
+  if (name) updatedData.name = name;
+  if (number) updatedData.number = number;
+
+  // Email Update: OTP Verification Flow
+  if (newEmail && otp) {
+    // Step 1: Verify OTP on current email
+    const currentOtp = await prisma.otp.findUnique({ where: { email: currentEmail } });
+    if (!currentOtp || currentOtp.code !== otp || currentOtp.expiresAt < new Date()) {
+      return res.status(400).json({ message: "Invalid or expired OTP on current email" });
     }
 
-    // Handle name update if provided
-    const updatedData: Partial<User> = {};
-    if (name) updatedData.name = name;
-    if (number) updatedData.number = number;
-
-    // Email Update: OTP Verification Flow
-    if (newEmail && otp) {
-      // Step 1: Verify OTP on current email
-      const currentOtp = await prisma.otp.findUnique({ where: { email: currentEmail } });
-      if (!currentOtp || currentOtp.code !== otp || currentOtp.expiresAt < new Date()) {
-        return res.status(400).json({ message: "Invalid or expired OTP on current email" });
-      }
-
-      // OTP verified on current email, proceed to generate OTP for new email
-      const newOtpCode = generateOtp();
-      const expiresAt = otpExpiryTime();
-      await prisma.otp.upsert({
-        where: { email: newEmail },
-        update: { code: newOtpCode, expiresAt },
-        create: { email: newEmail, code: newOtpCode, expiresAt },
-      });
-
-      await sendOtpEmail(newEmail, newOtpCode);
-      return res.status(200).json({ message: "OTP sent to new email. Please verify to update." });
-    }
-
-    // Final Step: If OTP for new email is verified, update user email
-    if (newEmail && !otp) {
-      const newOtpRecord = await prisma.otp.findUnique({ where: { email: newEmail } });
-      if (!newOtpRecord || newOtpRecord.code !== otp || newOtpRecord.expiresAt < new Date()) {
-        return res.status(400).json({ message: "Invalid or expired OTP on new email" });
-      }
-
-      // If OTP is valid, update the email in the user record
-      updatedData.email = newEmail;
-    }
-
-    // Update the user record with any other provided details
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: updatedData,
+    // OTP verified on current email, proceed to generate OTP for new email
+    const newOtpCode = generateOtp();
+    const expiresAt = otpExpiryTime();
+    await prisma.otp.upsert({
+      where: { email: newEmail },
+      update: { code: newOtpCode, expiresAt },
+      create: { email: newEmail, code: newOtpCode, expiresAt },
     });
 
-    return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
-  } catch (error: any) {
-    console.error("Error updating user details:", error);
-    return res.status(500).json({ message: "Failed to update user details", error: error.message });
+    await sendOtpEmail(newEmail, newOtpCode);
+    return res.status(200).json({ message: "OTP sent to new email. Please verify to update." });
   }
+
+  // Final Step: If OTP for new email is verified, update user email
+  if (newEmail && !otp) {
+    const newOtpRecord = await prisma.otp.findUnique({ where: { email: newEmail } });
+    if (!newOtpRecord || newOtpRecord.code !== otp || newOtpRecord.expiresAt < new Date()) {
+      return res.status(400).json({ message: "Invalid or expired OTP on new email" });
+    }
+
+    // If OTP is valid, update the email in the user record
+    updatedData.email = newEmail;
+  }
+
+  // Update the user record with any other provided details
+  const updatedUser = await prisma.user.update({
+    where: { id: id },
+    data: updatedData,
+  });
+
+  return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
+} catch (error: any) {
+  console.error("Error updating user details:", error);
+  return res.status(500).json({ message: "Failed to update user details", error: error.message });
+}
 }
 
 

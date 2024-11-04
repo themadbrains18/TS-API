@@ -119,26 +119,41 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
 // Delete a template and its associated files
 export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
+// console.log(id,"==id");
 
   try {
     const template = await prisma.template.findUnique({ where: { id } });
     if (!template) return res.status(404).json({ message: 'Template not found.' });
 
     // Delete files from Firebase
-    const imageUrls = template.imageUrl?.split(',') || [];
-    await Promise.all(imageUrls.map(url => deleteFileFromFirebase(url)));
+    // const imageUrls = template.imageUrl?.split(',') || [];
+    // await Promise.all(imageUrls.map(url => deleteFileFromFirebase(url)));
 
     // Delete associated images and files
-    await Promise.all([
+    // await Promise.all([
+    //   // prisma.sliderImage.deleteMany({ where: { templateId: JSON.stringify(id) } }),
+    //   // prisma.previewImage.deleteMany({ where: { templateId: JSON.stringify(id) } }),
+    //   // prisma.previewMobileImage.deleteMany({ where: { templateId: JSON.stringify(id) } }),
+    //   // prisma.sourceFile.deleteMany({ where: { templateId: JSON.stringify(id) } }),
+    // ]);
+    await prisma.$transaction([
+      // Delete related records in other models
+      prisma.credit.deleteMany({ where: { templateId: id } }),
+      prisma.sourceFile.deleteMany({ where: { templateId: id } }),
       prisma.sliderImage.deleteMany({ where: { templateId: id } }),
       prisma.previewImage.deleteMany({ where: { templateId: id } }),
       prisma.previewMobileImage.deleteMany({ where: { templateId: id } }),
-      prisma.sourceFile.deleteMany({ where: { templateId: id } }),
+      prisma.downloadHistory.deleteMany({ where: { templateId: id } }),
+
+      // Delete the main template record
+      prisma.template.delete({
+        where: { id },
+      }),
     ]);
 
-    await prisma.template.delete({ where: { id } });
-
-    return res.status(200).json({ message: 'Template deleted successfully.' });
+    res.status(200).json({
+      message: 'Template and related records deleted successfully',
+    });
   } catch (error: any) {
     return res.status(500).json({ message: 'Failed to delete template', error: error.message });
   }
@@ -514,13 +529,19 @@ export async function getTemplateById(req: Request, res: Response) {
 export async function getTemplateByTitle(req: Request, res: Response) {
   const query = typeof req.query.query === 'string' ? req.query.query : undefined;
   const subCategoryId = typeof req.query.subCategoryId === 'string' ? req.query.subCategoryId : undefined;
-console.log(subCategoryId,"==jhkjhkjh", query);
+
+  console.log(subCategoryId, "==jhkjhkjh", query);
+
+  // Early return if query is empty
+  if (!query) {
+    return res.status(200).json({ templates: [] }); // Return an empty array if there is no query
+  }
 
   try {
     const results = await prisma.template.findMany({
       where: {
         AND: [
-          query ? { title: { contains: query } } : {}, // Apply title filter if query is valid
+          { title: { contains: query } }, // Apply title filter as query is valid
           subCategoryId ? { subCategoryId } : {}, // Apply subCategoryId filter if valid
         ],
       },
@@ -533,7 +554,7 @@ console.log(subCategoryId,"==jhkjhkjh", query);
       },
     });
 
-    res.status(200).json(results);
+    res.status(200).json({ templates: results });
   } catch (error) {
     console.error('Search API error:', error);
     res.status(500).json({ message: 'Error searching templates' });

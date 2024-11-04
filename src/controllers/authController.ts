@@ -5,7 +5,7 @@ import prisma from '../server';
 import crypto from 'crypto';
 import { User, Otp } from '@prisma/client';
 import { sendOtpEmail } from '../services/nodeMailer';
-import { uploadFileToFirebase } from '../services/fileService';
+import { deleteFileFromFirebase, uploadFileToFirebase } from '../services/fileService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 const TOKEN_EXPIRY = '8h'; // JWT Token expires in 8 hours
@@ -343,18 +343,22 @@ export async function resendOtp(req: Request, res: Response) {
 export async function checkUser(req: Request, res: Response) {
 
   try {
+
+
     // Confirm if user information is populated in the request object
     if (!req.user || !req.user.id) {
       console.error("User not authenticated or user ID missing");
       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
     }
+    console.log("hreerer");
+
     let user = await prisma.user.findUnique({
-      where: { id: JSON.stringify(req.user.id) },
+      where: { id: req.user.id },
     });
 
-    return res.status(200).json({ res, user });
+    return res.status(200).json({ user });
   } catch (error: any) {
-    return res.status(500).json({ res, error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -371,7 +375,6 @@ export async function getUserDownloads(req: Request, res: Response) {
     const limit = 6; // Items per page
     const offset = (page - 1) * limit;
 
-    console.log(`Fetching download history for user ID: ${userId}, page: ${page}, limit: ${limit}`);
 
     // Fetch total count for pagination
     const totalCount = await prisma.downloadHistory.count({
@@ -416,68 +419,93 @@ export async function getUserDownloads(req: Request, res: Response) {
 
 // API to update user details with OTP verification for email change
 export async function updateUserDetails(req: Request, res: Response) {
-  const { userId, name, number, currentEmail, newEmail, otp } = req.body;
+  const { name, number, currentEmail, newEmail, otp } = req.body;
 
-  if (!userId) {
+  if (!req.user?.id) {
     return res.status(400).json({ message: "User ID is required" });
   }
 
   try {
     // Fetch the current user data
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Handle name update if provided
+    // Handle name and number update if provided
     const updatedData: Partial<User> = {};
     if (name) updatedData.name = name;
     if (number) updatedData.number = number;
 
-    // Email Update: OTP Verification Flow
-    if (newEmail && otp) {
-      // Step 1: Verify OTP on current email
+    // Handle OTP verification and email update flow
+    if (currentEmail && !otp) {
+      // Step 1: Verify if email exists and send OTP if valid
+      const userExists = await prisma.user.findUnique({ where: { email: currentEmail } });
+      if (!userExists) {
+        return res.status(404).json({ message: "Current email not found" });
+      }
+
+      // Generate and send OTP to current email
+      const otpCode = generateOtp();
+      const expiresAt = otpExpiryTime();
+      await prisma.otp.upsert({
+        where: { email: currentEmail },
+        update: { code: otpCode, expiresAt },
+        create: { email: currentEmail, code: otpCode, expiresAt },
+      });
+
+      await sendOtpEmail(currentEmail, otpCode);
+      return res.status(200).json({ message: "OTP sent to current email for verification", sendotp: true });
+    }
+
+    if (currentEmail && otp && !newEmail) {
+      // Step 2: Verify OTP for current email
       const currentOtp = await prisma.otp.findUnique({ where: { email: currentEmail } });
       if (!currentOtp || currentOtp.code !== otp || currentOtp.expiresAt < new Date()) {
         return res.status(400).json({ message: "Invalid or expired OTP on current email" });
       }
 
-      // OTP verified on current email, proceed to generate OTP for new email
+      // OTP verified on current email; proceed to update email if newEmail is provided
+      return res.status(200).json({ message: "OTP verified, you can now proceed with updating the email", otp: true });
+    }
+    // OTP verified on current email; respond to the user that they can proceed to update the new email
+    if (newEmail && !otp) {
+      // Send OTP to new email if provided without OTP
       const newOtpCode = generateOtp();
-      const expiresAt = otpExpiryTime();
+      const newExpiresAt = otpExpiryTime();
       await prisma.otp.upsert({
         where: { email: newEmail },
-        update: { code: newOtpCode, expiresAt },
-        create: { email: newEmail, code: newOtpCode, expiresAt },
+        update: { code: newOtpCode, expiresAt: newExpiresAt },
+        create: { email: newEmail, code: newOtpCode, expiresAt: newExpiresAt },
       });
 
       await sendOtpEmail(newEmail, newOtpCode);
-      return res.status(200).json({ message: "OTP sent to new email. Please verify to update." });
+      return res.status(200).json({ message: "OTP sent to new email for verification" ,sendotp: true});
     }
-
-    // Final Step: If OTP for new email is verified, update user email
-    if (newEmail && !otp) {
+    if (newEmail && otp) {
+      // Step 3: Verify OTP for new email and update if valid
       const newOtpRecord = await prisma.otp.findUnique({ where: { email: newEmail } });
       if (!newOtpRecord || newOtpRecord.code !== otp || newOtpRecord.expiresAt < new Date()) {
         return res.status(400).json({ message: "Invalid or expired OTP on new email" });
       }
 
-      // If OTP is valid, update the email in the user record
+      // OTP verified for new email; update the user email
       updatedData.email = newEmail;
     }
 
-    // Update the user record with any other provided details
+    // Apply the updates
     const updatedUser = await prisma.user.update({
-      where: { id: userId },
+      where: { id: req.user.id },
       data: updatedData,
     });
 
-    return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
+    return res.status(200).json({ message: "User details updated successfully", user: updatedUser, redirect:  newEmail ? true : false  });
   } catch (error: any) {
     console.error("Error updating user details:", error);
     return res.status(500).json({ message: "Failed to update user details", error: error.message });
   }
 }
+
 
 
 
@@ -511,3 +539,51 @@ export async function updateUserImage(req: Request, res: Response) {
     return res.status(500).json({ message: 'Failed to update profile image', error: error.message });
   }
 }
+
+export async function removeUserImage(req: Request, res: Response) {
+  try {
+    const userId = req.user?.id;
+
+    // Check for user ID and file presence
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID and image file are required.' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId
+      }
+    })
+    // Upload new profile image to Firebase
+    const profileImageUrl = await deleteFileFromFirebase(user?.profileImg || "");
+
+
+    // Update the user's profile image in the database
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { profileImg: null }, // Store URL in the user's profile image field
+    });
+
+    return res.status(200).json({
+      message: 'Profile image removed successfully',
+      user: { id: updatedUser.id, profileImageUrl: updatedUser.profileImg },
+    });
+  } catch (error: any) {
+    console.error('Error updating profile image:', error);
+    return res.status(500).json({ message: 'Failed to update profile image', error: error.message });
+  }
+}
+
+export const resetFreeDownloads = async () => {
+  try {
+      // Update all users, setting freeDownloads to 3
+      await prisma.user.updateMany({
+          data: { freeDownloads: 3 },
+      });
+      console.log('Successfully reset freeDownloads for all users.');
+  } catch (error) {
+      console.error('Error resetting freeDownloads:', error);
+  } finally {
+      await prisma.$disconnect();
+  }
+};

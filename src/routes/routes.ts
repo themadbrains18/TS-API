@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { validateData } from '../middlewares/zodValidationMiddleware';
 import { userLoginSchema, userSignUpSchema } from '../dto/user.dto';
 
-import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser, updateUserDetails, updateUserImage, getUserDownloads } from '../controllers/authController';
+import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser, updateUserDetails, updateUserImage, getUserDownloads, removeUserImage } from '../controllers/authController';
 import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, featureTemplates, getTemplateByTitle, } from '../controllers/templateController';
 import { createCredit, getCredits, updateCredit, deleteCredit, } from '../controllers/creditController';
 import { createTechnicalDetail, getTechnicalDetails, updateTechnicalDetail, deleteTechnicalDetail, } from '../controllers/technicalDetailController';
@@ -27,9 +27,10 @@ router.post('/forget-password', forgetPassword);
 router.post('/reset-password', resetPasswordWithOtp);
 router.get('/get-user', authenticateToken, checkUser);
 router.get('/get-user-downloads', authenticateToken, getUserDownloads);
-router.patch('/update-details',authenticateToken, updateUserDetails);
+router.put('/update-details',authenticateToken, updateUserDetails);
 
 router.put('/user/update-image', authenticateToken, uploadSingleImageFile, multerErrorHandler, updateUserImage);
+router.delete('/user/remove-image', authenticateToken,  removeUserImage);
 
 // Template routes
 router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, createTemplate); // Create a new template (with file upload)
@@ -44,7 +45,7 @@ router.get('/templates-by-userid/:id', getAllTemplatesByUserId); // Get all temp
 router.get('/templates-by-id/:id', getTemplateById); // Get a specific template by ID
 router.get('/templates/search', getTemplateByTitle); // Get a specific template by ID
 router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken, updateTemplate); // Update a specific template by ID
-router.delete('/templates/:id', validateData(deleteTemplateSchema), authenticateToken, deleteTemplate); // Delete a specific template by ID
+router.delete('/templates/:id',  authenticateToken, deleteTemplate); // Delete a specific template by ID
 
 // Template Type routes
 router.post('/template-types', authenticateToken, createTemplateType); // Create a new TemplateType

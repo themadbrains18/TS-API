@@ -17,14 +17,14 @@ function generateToken(userId: string): string {
 
 // Generate a random 6-digit OTP
 function generateOtp(): string {
-  // return crypto.randomInt(100000, 999999).toString();
-  return '123456'
+  return crypto.randomInt(100000, 999999).toString();
+  // return '123456'
 }
 
 // Set OTP expiration time (e.g., 10 minutes from now)
 function otpExpiryTime(): Date {
   const now = new Date();
-  now.setMinutes(now.getMinutes() + 10);
+  now.setMinutes(now.getMinutes() + 1);
   return now;
 }
 
@@ -150,7 +150,9 @@ export async function login(req: Request, res: Response) {
           }
         });
       } else {
-        return res.status(verificationResponse.status).json(verificationResponse.message);
+        console.log("herer");
+        
+        return res.status(verificationResponse.status).json({error:verificationResponse.message});
       }
 
 

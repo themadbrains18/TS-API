@@ -17,8 +17,8 @@ function generateToken(userId: string): string {
 
 // Generate a random 6-digit OTP
 function generateOtp(): string {
-  // return crypto.randomInt(100000, 999999).toString();
-  return '123456'
+  return crypto.randomInt(100000, 999999).toString();
+  // return '123456'
 }
 
 // Set OTP expiration time (e.g., 10 minutes from now)
@@ -146,11 +146,13 @@ export async function login(req: Request, res: Response) {
           results: {
             message: 'Login successfull.',
             token,
-            data: { id: user.id, email: user.email, role: user.role, name: user.name }
+            data: { id: user.id, email: user.email, role: user.role, name: user.name,image:user.profileImg, freeDownloads:user.freeDownloads }
           }
         });
       } else {
-        return res.status(verificationResponse.status).json(verificationResponse.message);
+        console.log("herer");
+        
+        return res.status(verificationResponse.status).json({error:verificationResponse.message});
       }
 
 

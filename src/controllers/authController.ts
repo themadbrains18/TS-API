@@ -8,7 +8,7 @@ import { sendOtpEmail } from '../services/nodeMailer';
 import { deleteFileFromFirebase, uploadFileToFirebase } from '../services/fileService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
-const TOKEN_EXPIRY = '8h'; // JWT Token expires in 8 hours
+const TOKEN_EXPIRY = '1m'; // JWT Token expires in 8 hours
 
 // Generate JWT Token
 function generateToken(userId: string): string {
@@ -146,7 +146,7 @@ export async function login(req: Request, res: Response) {
           results: {
             message: 'Login successfull.',
             token,
-            data: { id: user.id, email: user.email, role: user.role, name: user.name }
+            data: { id: user.id, email: user.email, role: user.role, name: user.name,image:user.profileImg, freeDownloads:user.freeDownloads }
           }
         });
       } else {

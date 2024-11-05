@@ -2,6 +2,8 @@ import app from './app';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import express from "express"
+import cron from 'node-cron';
+import { resetFreeDownloads } from './controllers/authController';
 
 dotenv.config(); 
 
@@ -26,7 +28,11 @@ async function startServer() {
     process.exit(1);
   }
 }
-
+// Schedule the task to run daily at midnight
+cron.schedule('0 0 * * *', async () => {
+  console.log('Running daily freeDownloads reset');
+  await resetFreeDownloads();
+});
 
 
 // Graceful shutdown

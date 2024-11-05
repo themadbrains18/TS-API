@@ -35,55 +35,142 @@ model Otp {
   email     String   @unique // Ensure this is unique
 }
 
+// model Template {
+//   id          String   @id @default(cuid())
+//   title       String
+//   price       Float    @default(0)
+//   description String?  @db.Text // Optional description of the template
+//   imageUrl    String? // URL for the template image
+//   version     String? // URL for the template image
+//   userId      String
+//   downloads   Int      @default(0)
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+//   user        User?    @relation("UserTemplates", fields: [userId], references: [id])
+
+//   // General fields
+//   industries     IndustryType? @relation(fields: [industryTypeId], references: [id])
+//   industryTypeId String?
+
+//   // Relationships
+//   templateType   TemplateType? @relation(fields: [templateTypeId], references: [id])
+//   templateTypeId String?
+
+//   subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id])
+//   subCategoryId String?
+
+//   // cmsType   CmsType? @relation(fields: [cmsTypeId], references: [id])
+//   // cmsTypeId String?
+
+//   // UI Template fields
+//   softwareType   SoftwareType? @relation(fields: [softwareTypeId], references: [id])
+//   softwareTypeId String?
+
+//   // CMS Website fields
+//   mobileVersion      Boolean? // Indicates whether the CMS template has a mobile version
+//   documentationReady Boolean? // Indicates if documentation is ready for the CMS website
+
+//   credits     Credit[] // Relation to Credits (for fonts, icons, etc.)
+//   techDetails Json? // Change to an array of strings for tech details
+
+//   // These are required and stored as arrays
+//   sourceFiles         SourceFile[] // Required array of source files for the template
+//   sliderImages        SliderImage[] // Required array of slider images for showcasing the template
+//   previewImages       PreviewImage[] // Required array of preview images for the template
+//   previewMobileImages PreviewMobileImage[] // Required array of preview images for the template
+
+//   seoTags         Json // SEO tags for the template
+//   isPaid          Boolean           @default(false) // Whether the template is free or paid
+//   downloadHistory DownloadHistory[]
+
+//   @@index([userId], map: "Template_userId_fkey") // Index for efficient user-template querying
+// }
+
+// model Credit {
+//   id            String   @id @default(cuid())
+//   fonts         Json?
+//   images        Json?
+//   icons         Json?
+//   illustrations Json?
+//   template      Template @relation(fields: [templateId], references: [id])
+//   templateId    String
+// }
+
+// model TechnicalDetail {
+//   id         String @id @default(cuid())
+//   techName   String // Changed to a single string
+//   // template   Template @relation(fields: [templateId], references: [id])
+//   templateId String
+// }
+
+// // Assets Model for required arrays
+// model SourceFile {
+//   id         String   @id @default(cuid())
+//   fileUrl    String   @db.Text
+//   template   Template @relation(fields: [templateId], references: [id])
+//   templateId String
+// }
+
+// model SliderImage {
+//   id         String   @id @default(cuid())
+//   imageUrl   String   @db.Text
+//   template   Template @relation(fields: [templateId], references: [id])
+//   templateId String
+// }
+
+// model PreviewImage {
+//   id         String   @id @default(cuid())
+//   imageUrl   String   @db.Text
+//   template   Template @relation(fields: [templateId], references: [id])
+//   templateId String
+// }
+
+// model PreviewMobileImage {
+//   id         String   @id @default(cuid())
+//   imageUrl   String   @db.Text
+//   template   Template @relation(fields: [templateId], references: [id])
+//   templateId String
+// }
 model Template {
-  id          String   @id @default(cuid())
-  title       String
-  price       Float    @default(0)
-  description String?  @db.Text // Optional description of the template
-  imageUrl    String? // URL for the template image
-  version     String? // URL for the template image
-  userId      String
-  downloads   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User?    @relation("UserTemplates", fields: [userId], references: [id])
+  id                  String               @id @default(cuid())
+  title               String
+  price               Float                @default(0)
+  description         String?              @db.Text
+  imageUrl            String?
+  version             String?
+  userId              String
+  downloads           Int                  @default(0)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  user                User?                @relation("UserTemplates", fields: [userId], references: [id], onDelete: Cascade)
 
-  // General fields
-  industries     IndustryType? @relation(fields: [industryTypeId], references: [id])
-  industryTypeId String?
+  industries          IndustryType?        @relation(fields: [industryTypeId], references: [id], onDelete: Cascade)
+  industryTypeId      String?
 
-  // Relationships
-  templateType   TemplateType? @relation(fields: [templateTypeId], references: [id])
-  templateTypeId String?
+  templateType        TemplateType?        @relation(fields: [templateTypeId], references: [id], onDelete: Cascade)
+  templateTypeId      String?
 
-  subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id])
-  subCategoryId String?
+  subCategory         SubCategory?         @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  subCategoryId       String?
 
-  // cmsType   CmsType? @relation(fields: [cmsTypeId], references: [id])
-  // cmsTypeId String?
+  softwareType        SoftwareType?        @relation(fields: [softwareTypeId], references: [id], onDelete: Cascade)
+  softwareTypeId      String?
 
-  // UI Template fields
-  softwareType   SoftwareType? @relation(fields: [softwareTypeId], references: [id])
-  softwareTypeId String?
+  mobileVersion       Boolean?
+  documentationReady  Boolean?
 
-  // CMS Website fields
-  mobileVersion      Boolean? // Indicates whether the CMS template has a mobile version
-  documentationReady Boolean? // Indicates if documentation is ready for the CMS website
+  credits             Credit[]             @relation("TemplateCredits") // Remove onDelete here
+  techDetails         Json?
+  sourceFiles         SourceFile[]         @relation("TemplateSourceFiles") // Remove onDelete here
+  sliderImages        SliderImage[]        @relation("TemplateSliderImages") // Remove onDelete here
+  previewImages       PreviewImage[]       @relation("TemplatePreviewImages") // Remove onDelete here
+  previewMobileImages PreviewMobileImage[] @relation("TemplatePreviewMobileImages") // Remove onDelete here
 
-  credits     Credit[] // Relation to Credits (for fonts, icons, etc.)
-  techDetails Json? // Change to an array of strings for tech details
+  seoTags             Json
+  isPaid              Boolean              @default(false)
+  downloadHistory     DownloadHistory[]    @relation("TemplateDownloadHistory")
 
-  // These are required and stored as arrays
-  sourceFiles         SourceFile[] // Required array of source files for the template
-  sliderImages        SliderImage[] // Required array of slider images for showcasing the template
-  previewImages       PreviewImage[] // Required array of preview images for the template
-  previewMobileImages PreviewMobileImage[] // Required array of preview images for the template
-
-  seoTags         Json // SEO tags for the template
-  isPaid          Boolean           @default(false) // Whether the template is free or paid
-  downloadHistory DownloadHistory[]
-
-  @@index([userId], map: "Template_userId_fkey") // Index for efficient user-template querying
+  @@index([userId], map: "Template_userId_fkey")
 }
 
 model Credit {
@@ -92,45 +179,51 @@ model Credit {
   images        Json?
   icons         Json?
   illustrations Json?
-  template      Template @relation(fields: [templateId], references: [id])
+  template      Template @relation("TemplateCredits", fields: [templateId], references: [id], onDelete: Cascade) // Add onDelete here
   templateId    String
 }
 
-model TechnicalDetail {
-  id         String @id @default(cuid())
-  techName   String // Changed to a single string
-  // template   Template @relation(fields: [templateId], references: [id])
-  templateId String
-}
-
-// Assets Model for required arrays
 model SourceFile {
   id         String   @id @default(cuid())
   fileUrl    String   @db.Text
-  template   Template @relation(fields: [templateId], references: [id])
+  template   Template @relation("TemplateSourceFiles",fields: [templateId], references: [id], onDelete: Cascade)
   templateId String
 }
 
 model SliderImage {
   id         String   @id @default(cuid())
   imageUrl   String   @db.Text
-  template   Template @relation(fields: [templateId], references: [id])
+  template   Template @relation("TemplateSliderImages",fields: [templateId], references: [id], onDelete: Cascade)
   templateId String
 }
 
 model PreviewImage {
   id         String   @id @default(cuid())
   imageUrl   String   @db.Text
-  template   Template @relation(fields: [templateId], references: [id])
+  template   Template @relation("TemplatePreviewImages",fields: [templateId], references: [id], onDelete: Cascade)
   templateId String
 }
 
 model PreviewMobileImage {
   id         String   @id @default(cuid())
   imageUrl   String   @db.Text
-  template   Template @relation(fields: [templateId], references: [id])
+  template   Template @relation("TemplatePreviewMobileImages",fields: [templateId], references: [id], onDelete: Cascade)
   templateId String
 }
+
+model DownloadHistory {
+  id           String   @id @default(cuid())
+  userId       String?
+  email        String
+  templateId   String
+  downloadedAt DateTime @default(now())
+  
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template     Template @relation("TemplateDownloadHistory",fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([userId, templateId], map: "DownloadHistory_userId_templateId_idx")
+}
+
 
 model TemplateType {
   id            String         @id @default(cuid())
@@ -166,17 +259,4 @@ model IndustryType {
   id        String     @id @default(cuid())
   name      String     @unique
   templates Template[]
-}
-
-model DownloadHistory {
-  id           String   @id @default(cuid())
-  userId       String?
-  email        String
-  templateId   String
-  downloadedAt DateTime @default(now()) // Timestamp of the download
-
-  user     User?    @relation(fields: [userId], references: [id])
-  template Template @relation(fields: [templateId], references: [id])
-
-  @@index([userId, templateId], map: "DownloadHistory_userId_templateId_idx") // Index for efficient querying
 }

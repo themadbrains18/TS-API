@@ -8,7 +8,7 @@ import { sendOtpEmail } from '../services/nodeMailer';
 import { deleteFileFromFirebase, uploadFileToFirebase } from '../services/fileService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
-const TOKEN_EXPIRY = '1m'; // JWT Token expires in 8 hours
+const TOKEN_EXPIRY = '8h'; // JWT Token expires in 8 hours
 
 // Generate JWT Token
 function generateToken(userId: string): string {
@@ -24,7 +24,7 @@ function generateOtp(): string {
 // Set OTP expiration time (e.g., 10 minutes from now)
 function otpExpiryTime(): Date {
   const now = new Date();
-  now.setMinutes(now.getMinutes() + 1);
+  now.setMinutes(now.getMinutes() + 10);
   return now;
 }
 
@@ -334,6 +334,7 @@ export async function resendOtp(req: Request, res: Response) {
       update: { code: otpCode, expiresAt },
       create: { email: email, code: otpCode, expiresAt },
     });
+    await sendOtpEmail(email, otpCode);
 
     return res.status(200).json({ message: 'OTP resent successfully.', results: { otp: true } });
   } catch (error: any) {

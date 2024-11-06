@@ -146,13 +146,13 @@ export async function login(req: Request, res: Response) {
           results: {
             message: 'Login successfull.',
             token,
-            data: { id: user.id, email: user.email, role: user.role, name: user.name,image:user.profileImg, freeDownloads:user.freeDownloads }
+            data: { id: user.id, email: user.email, role: user.role, name: user.name,image:user.profileImg, freeDownloads:user.freeDownloads, number:user.number }
           }
         });
       } else {
-        console.log("herer");
+        console.log("herer",verificationResponse.status);
         
-        return res.status(verificationResponse.status).json({error:verificationResponse.message});
+        return res.status(verificationResponse.status).json({message:verificationResponse.message});
       }
 
 

@@ -512,79 +512,79 @@ export async function checkUser(req: Request, res: Response) {
 
 // Assuming this is your Prisma client instance
 
-export async function getUserDownloads(req: Request, res: Response) {
-  try {
-    if (!req.user || !req.user.id) {
-      console.error("User not authenticated or user ID missing");
-      return res.status(401).json({ message: "Unauthorized: User not authenticated" });
-    }
+// export async function getUserDownloads(req: Request, res: Response) {
+//   try {
+//     if (!req.user || !req.user.id) {
+//       console.error("User not authenticated or user ID missing");
+//       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
+//     }
 
-    const userId = req.user.id;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = 6;
-    const offset = (page - 1) * limit;
-    const selectedSort = req.query.sort as string || 'Last Day';
-    const selectedCategory = req.query.category as string || 'All';
+//     const userId = req.user.id;
+//     const page = parseInt(req.query.page as string) || 1;
+//     const limit = 6;
+//     const offset = (page - 1) * limit;
+//     const selectedSort = req.query.sort as string || 'Last Day';
+//     const selectedCategory = req.query.category as string || 'All';
 
-    // Determine the date range filter based on selectedSort
-    let dateFilter = {};
-    const today = new Date();
-    if (selectedSort === 'Last Day') {
-      dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 1)) } };
-    } else if (selectedSort === 'Last 7 Day') {
-      dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 7)) } };
-    } else if (selectedSort === 'Last 30 Day') {
-      dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 30)) } };
-    } else if (selectedSort === 'Last Quarter') {
-      dateFilter = { downloadedAt: { gte: new Date(today.setMonth(today.getMonth() - 3)) } };
-    } else if (selectedSort === 'Last Year') {
-      dateFilter = { downloadedAt: { gte: new Date(today.setFullYear(today.getFullYear() - 1)) } };
-    }
+//     // Determine the date range filter based on selectedSort
+//     let dateFilter = {};
+//     const today = new Date();
+//     if (selectedSort === 'Last Day') {
+//       dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 1)) } };
+//     } else if (selectedSort === 'Last 7 Day') {
+//       dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 7)) } };
+//     } else if (selectedSort === 'Last 30 Day') {
+//       dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 30)) } };
+//     } else if (selectedSort === 'Last Quarter') {
+//       dateFilter = { downloadedAt: { gte: new Date(today.setMonth(today.getMonth() - 3)) } };
+//     } else if (selectedSort === 'Last Year') {
+//       dateFilter = { downloadedAt: { gte: new Date(today.setFullYear(today.getFullYear() - 1)) } };
+//     }
 
-    // Determine the category filter based on selectedCategory
-    let categoryFilter = {};
-    if (selectedCategory === 'Free Download') {
-      categoryFilter = { template: { price: 0 } };
-    } else if (selectedCategory === 'Premium') {
-      categoryFilter = { template: { price: { gt: 0 } } };
-    }
+//     // Determine the category filter based on selectedCategory
+//     let categoryFilter = {};
+//     if (selectedCategory === 'Free Download') {
+//       categoryFilter = { template: { price: 0 } };
+//     } else if (selectedCategory === 'Premium') {
+//       categoryFilter = { template: { price: { gt: 0 } } };
+//     }
 
-    // Combine filters for the query
-    const filters = { userId, ...dateFilter, ...categoryFilter };
+//     // Combine filters for the query
+//     const filters = { userId, ...dateFilter, ...categoryFilter };
 
-    const totalCount = await prisma.downloadHistory.count({ where: filters });
-    const userDownloads = await prisma.downloadHistory.findMany({
-      where: filters,
-      include: {
-        template: {
-          select: {
-            title: true,
-            price: true,
-            sliderImages: true,
-            sourceFiles: true,
-          },
-        },
-      },
-      skip: offset,
-      take: limit,
-    });
+//     const totalCount = await prisma.downloadHistory.count({ where: filters });
+//     const userDownloads = await prisma.downloadHistory.findMany({
+//       where: filters,
+//       include: {
+//         template: {
+//           select: {
+//             title: true,
+//             price: true,
+//             sliderImages: true,
+//             sourceFiles: true,
+//           },
+//         },
+//       },
+//       skip: offset,
+//       take: limit,
+//     });
 
-    const totalPages = Math.ceil(totalCount / limit);
+//     const totalPages = Math.ceil(totalCount / limit);
 
-    return res.status(200).json({
-      downloads: userDownloads,
-      pagination: {
-        page,
-        limit,
-        totalPages,
-        totalCount,
-      },
-    });
-  } catch (error: any) {
-    console.error("Error fetching user downloads:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
-  }
-}
+//     return res.status(200).json({
+//       downloads: userDownloads,
+//       pagination: {
+//         page,
+//         limit,
+//         totalPages,
+//         totalCount,
+//       },
+//     });
+//   } catch (error: any) {
+//     console.error("Error fetching user downloads:", error);
+//     return res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// }
 
 
 // API to update user details with OTP verification for email change
@@ -699,6 +699,159 @@ export async function updateUserDetails(req: Request, res: Response) {
 // }
 // }
 
+// export async function getUserDownloads(req: Request, res: Response) {
+//   try {
+//     if (!req.user || !req.user.id) {
+//       console.error("User not authenticated or user ID missing");
+//       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
+//     }
+
+//     const userId = req.user.id;
+//     const page = parseInt(req.query.page as string) || 1;
+//     const limit = 6;
+//     const offset = (page - 1) * limit;
+//     const selectedSort = req.query.sort as string || 'Last Day';
+//     const selectedCategory = req.query.category as string || 'All';
+
+//     // Initialize filters based on sort and category
+//     let dateFilter = {};
+//     const today = new Date();
+
+//     // Set date filter if not "All Time"
+//     if (selectedSort !== 'All Downloads') {
+//       if (selectedSort === 'Last Day') {
+//         dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 1)) } };
+//       } else if (selectedSort === 'Last 7 Day') {
+//         dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 7)) } };
+//       } else if (selectedSort === 'Last 30 Day') {
+//         dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 30)) } };
+//       } else if (selectedSort === 'Last Quarter') {
+//         dateFilter = { downloadedAt: { gte: new Date(today.setMonth(today.getMonth() - 3)) } };
+//       } else if (selectedSort === 'Last Year') {
+//         dateFilter = { downloadedAt: { gte: new Date(today.setFullYear(today.getFullYear() - 1)) } };
+//       }
+//     }
+
+//     // Determine the category filter
+//     let categoryFilter = {};
+//     if (selectedCategory === 'Free Download') {
+//       categoryFilter = { template: { price: 0 } };
+//     } else if (selectedCategory === 'Premium') {
+//       categoryFilter = { template: { price: { gt: 0 } } };
+//     }
+
+//     // Combine all filters
+//     const filters = { userId, ...dateFilter, ...categoryFilter };
+
+//     const totalCount = await prisma.downloadHistory.count({ where: filters });
+//     const userDownloads = await prisma.downloadHistory.findMany({
+//       where: filters,
+//       include: {
+//         template: {
+//           select: {
+//             title: true,
+//             price: true,
+//             sliderImages: true,
+//             sourceFiles: true,
+//           },
+//         },
+//       },
+//       skip: offset,
+//       take: limit,
+//     });
+
+//     const totalPages = Math.ceil(totalCount / limit);
+
+//     return res.status(200).json({
+//       downloads: userDownloads,
+//       pagination: {
+//         page,
+//         limit,
+//         totalPages,
+//         totalCount,
+//       },
+//     });
+//   } catch (error: any) {
+//     console.error("Error fetching user downloads:", error);
+//     return res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// }
+
+export async function getUserDownloads(req: Request, res: Response) {
+  try {
+    if (!req.user || !req.user.id) {
+      console.error("User not authenticated or user ID missing");
+      return res.status(401).json({ message: "Unauthorized: User not authenticated" });
+    }
+
+    const userId = req.user.id;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = 6;
+    const offset = (page - 1) * limit;
+    const selectedSort = req.query.sort as string || 'All Downloads';
+    const selectedCategory = req.query.category as string || 'All';
+
+    // Determine the date range filter based on selectedSort
+    let dateFilter = {};
+    if (selectedSort !== 'All Downloads') {
+      const today = new Date();
+      if (selectedSort === 'Last Day') {
+        dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 1)) } };
+      } else if (selectedSort === 'Last 7 Day') {
+        dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 7)) } };
+      } else if (selectedSort === 'Last 30 Day') {
+        dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 30)) } };
+      } else if (selectedSort === 'Last Quarter') {
+        dateFilter = { downloadedAt: { gte: new Date(today.setMonth(today.getMonth() - 3)) } };
+      } else if (selectedSort === 'Last Year') {
+        dateFilter = { downloadedAt: { gte: new Date(today.setFullYear(today.getFullYear() - 1)) } };
+      }
+    }
+
+    // Determine the category filter based on selectedCategory
+    let categoryFilter = {};
+    if (selectedCategory === 'Free Download') {
+      categoryFilter = { template: { price: 0 } };
+    } else if (selectedCategory === 'Premium') {
+      categoryFilter = { template: { price: { gt: 0 } } };
+    }
+
+    // Combine filters for the query
+    const filters = { userId, ...dateFilter, ...categoryFilter };
+
+    const totalCount = await prisma.downloadHistory.count({ where: filters });
+    const userDownloads = await prisma.downloadHistory.findMany({
+      where: filters,
+      include: {
+        template: {
+          select: {
+            title: true,
+            price: true,
+            sliderImages: true,
+            sourceFiles: true,
+          },
+        },
+      },
+      skip: offset,
+      take: limit,
+    });
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return res.status(200).json({
+      downloads: userDownloads,
+      pagination: {
+        page,
+        limit,
+        totalPages,
+        totalCount,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error fetching user downloads:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
 
 
 

@@ -159,18 +159,17 @@ model Template {
   mobileVersion       Boolean?
   documentationReady  Boolean?
 
-  credits             Credit[]             @relation("TemplateCredits") // Remove onDelete here
+  credits             Credit[]             @relation("TemplateCredits") 
   techDetails         Json?
-  sourceFiles         SourceFile[]         @relation("TemplateSourceFiles") // Remove onDelete here
-  sliderImages        SliderImage[]        @relation("TemplateSliderImages") // Remove onDelete here
-  previewImages       PreviewImage[]       @relation("TemplatePreviewImages") // Remove onDelete here
-  previewMobileImages PreviewMobileImage[] @relation("TemplatePreviewMobileImages") // Remove onDelete here
+  sourceFiles         SourceFile[]         @relation("TemplateSourceFiles") 
+  sliderImages        SliderImage[]        @relation("TemplateSliderImages") 
+  previewImages       PreviewImage[]       @relation("TemplatePreviewImages") 
+  previewMobileImages PreviewMobileImage[] @relation("TemplatePreviewMobileImages") 
 
   seoTags             Json
   isPaid              Boolean              @default(false)
   downloadHistory     DownloadHistory[]    @relation("TemplateDownloadHistory")
 
-  @@index([userId], map: "Template_userId_fkey")
 }
 
 model Credit {

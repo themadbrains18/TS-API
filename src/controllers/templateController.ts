@@ -173,8 +173,11 @@ export async function getTemplates(req: Request, res: Response) {
       search,
       page = 1,
       limit = 12,
+      sortBy,
     } = req.query;
 
+    console.log(sortBy,"=sort by");
+    
     // Initialize filters object
     const filters: any = {};
 
@@ -233,6 +236,20 @@ export async function getTemplates(req: Request, res: Response) {
     if (subCatId) {
       subCategoryFilter.subCategoryId = subCatId; // Use single value directly
     }
+    let orderBy: any;
+    switch (sortBy) {
+      case 'Newest releases':
+        orderBy = { createdAt: 'desc' };
+        break;
+      case 'Most popular':
+        orderBy = { downloads: 'desc' };
+        break;
+      case 'Best Seller':
+        orderBy = { downloads: 'desc' };
+        break;
+      default:
+        orderBy = { createdAt: 'desc' }; // Default to newest
+    }
 
     // Fetch templates with filters, pagination, and relations
     const [templates, totalTemplates] = await Promise.all([
@@ -261,7 +278,7 @@ export async function getTemplates(req: Request, res: Response) {
         },
         skip, // Pagination offset
         take, // Limit per page
-        orderBy: { createdAt: 'desc' }, // Order by creation date
+        orderBy, // Order by creation date
       }),
       prisma.template.count({
         where: {

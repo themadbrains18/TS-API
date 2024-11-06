@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { validateData } from '../middlewares/zodValidationMiddleware';
 import { userLoginSchema, userSignUpSchema } from '../dto/user.dto';
 
-import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser, updateUserDetails, updateUserImage, getUserDownloads, removeUserImage } from '../controllers/authController';
+import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser, updateUserDetails, updateUserImage, getUserDownloads, removeUserImage, deleteUser, getFreeDownload } from '../controllers/authController';
 import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, featureTemplates, getTemplateByTitle, } from '../controllers/templateController';
 import { createCredit, getCredits, updateCredit, deleteCredit, } from '../controllers/creditController';
 import { createTechnicalDetail, getTechnicalDetails, updateTechnicalDetail, deleteTechnicalDetail, } from '../controllers/technicalDetailController';
@@ -28,6 +28,8 @@ router.post('/reset-password', resetPasswordWithOtp);
 router.get('/get-user', authenticateToken, checkUser);
 router.get('/get-user-downloads', authenticateToken, getUserDownloads);
 router.put('/update-details',authenticateToken, updateUserDetails);
+router.delete('/delete-account/:id', deleteUser);
+router.get('/free-download', authenticateToken, getFreeDownload)
 
 router.put('/user/update-image', authenticateToken, uploadSingleImageFile, multerErrorHandler, updateUserImage);
 router.delete('/user/remove-image', authenticateToken,  removeUserImage);

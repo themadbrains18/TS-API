@@ -24,7 +24,7 @@ function generateOtp(): string {
 // Set OTP expiration time (e.g., 10 minutes from now)
 function otpExpiryTime(): Date {
   const now = new Date();
-  now.setMinutes(now.getMinutes() + 10);
+  now.setMinutes(now.getMinutes() + 1);
   return now;
 }
 
@@ -699,84 +699,6 @@ export async function updateUserDetails(req: Request, res: Response) {
 // }
 // }
 
-// export async function getUserDownloads(req: Request, res: Response) {
-//   try {
-//     if (!req.user || !req.user.id) {
-//       console.error("User not authenticated or user ID missing");
-//       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
-//     }
-
-//     const userId = req.user.id;
-//     const page = parseInt(req.query.page as string) || 1;
-//     const limit = 6;
-//     const offset = (page - 1) * limit;
-//     const selectedSort = req.query.sort as string || 'Last Day';
-//     const selectedCategory = req.query.category as string || 'All';
-
-//     // Initialize filters based on sort and category
-//     let dateFilter = {};
-//     const today = new Date();
-
-//     // Set date filter if not "All Time"
-//     if (selectedSort !== 'All Downloads') {
-//       if (selectedSort === 'Last Day') {
-//         dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 1)) } };
-//       } else if (selectedSort === 'Last 7 Day') {
-//         dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 7)) } };
-//       } else if (selectedSort === 'Last 30 Day') {
-//         dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 30)) } };
-//       } else if (selectedSort === 'Last Quarter') {
-//         dateFilter = { downloadedAt: { gte: new Date(today.setMonth(today.getMonth() - 3)) } };
-//       } else if (selectedSort === 'Last Year') {
-//         dateFilter = { downloadedAt: { gte: new Date(today.setFullYear(today.getFullYear() - 1)) } };
-//       }
-//     }
-
-//     // Determine the category filter
-//     let categoryFilter = {};
-//     if (selectedCategory === 'Free Download') {
-//       categoryFilter = { template: { price: 0 } };
-//     } else if (selectedCategory === 'Premium') {
-//       categoryFilter = { template: { price: { gt: 0 } } };
-//     }
-
-//     // Combine all filters
-//     const filters = { userId, ...dateFilter, ...categoryFilter };
-
-//     const totalCount = await prisma.downloadHistory.count({ where: filters });
-//     const userDownloads = await prisma.downloadHistory.findMany({
-//       where: filters,
-//       include: {
-//         template: {
-//           select: {
-//             title: true,
-//             price: true,
-//             sliderImages: true,
-//             sourceFiles: true,
-//           },
-//         },
-//       },
-//       skip: offset,
-//       take: limit,
-//     });
-
-//     const totalPages = Math.ceil(totalCount / limit);
-
-//     return res.status(200).json({
-//       downloads: userDownloads,
-//       pagination: {
-//         page,
-//         limit,
-//         totalPages,
-//         totalCount,
-//       },
-//     });
-//   } catch (error: any) {
-//     console.error("Error fetching user downloads:", error);
-//     return res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// }
-
 export async function getUserDownloads(req: Request, res: Response) {
   try {
     if (!req.user || !req.user.id) {
@@ -846,6 +768,28 @@ export async function getUserDownloads(req: Request, res: Response) {
         totalPages,
         totalCount,
       },
+    });
+  } catch (error: any) {
+    console.error("Error fetching user downloads:", error);
+    return res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
+export async function getFreeDownload(req: Request, res: Response) {
+  try {
+    if (!req.user || !req.user.id) {
+      console.error("User not authenticated or user ID missing");
+      return res.status(401).json({ message: "Unauthorized: User not authenticated" });
+    }
+
+    const userId = req.user.id;
+   const count =  await prisma.user.findUnique({where:{id:userId},
+  select:{
+    freeDownloads:true,
+    profileImg:true
+  }})
+
+    return res.status(200).json({
+      downloads: count
     });
   } catch (error: any) {
     console.error("Error fetching user downloads:", error);
@@ -931,5 +875,23 @@ export const resetFreeDownloads = async () => {
     console.error('Error resetting freeDownloads:', error);
   } finally {
     await prisma.$disconnect();
+  }
+};
+
+
+// Delete user account by ID
+export const deleteUser = async (req:Request, res:Response) => {
+  const { id } = req.params;
+
+  try {
+    // Delete the user and cascade deletion to related records
+    await prisma.user.delete({
+      where: { id },
+    });
+
+    return res.status(200).json({ message: 'User account deleted successfully' });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    return res.status(500).json({ error: 'Failed to delete user account' });
   }
 };

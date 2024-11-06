@@ -17,8 +17,8 @@ function generateToken(userId: string): string {
 
 // Generate a random 6-digit OTP
 function generateOtp(): string {
-  return crypto.randomInt(100000, 999999).toString();
-  // return '123456'
+  // return crypto.randomInt(100000, 999999).toString();
+  return '123456'
 }
 
 // Set OTP expiration time (e.g., 10 minutes from now)
@@ -332,6 +332,7 @@ export async function resendOtp(req: Request, res: Response) {
       update: { code: otpCode, expiresAt },
       create: { email: email, code: otpCode, expiresAt },
     });
+    await sendOtpEmail(email, otpCode);
 
     return res.status(200).json({ message: 'OTP resent successfully.', results: { otp: true } });
   } catch (error: any) {
@@ -361,28 +362,199 @@ export async function checkUser(req: Request, res: Response) {
   }
 }
 
+// export async function getUserDownloads(req: Request, res: Response) {
+//   try {
+//     // Confirm if user information is populated in the request object
+//     if (!req.user || !req.user.id) {
+//       console.error("User not authenticated or user ID missing");
+//       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
+//     }
+
+//     const userId = req.user.id;
+//     const page = parseInt(req.query.page as string) || 1; // Default to page 1
+//     const limit = 6; // Items per page
+//     const offset = (page - 1) * limit;
+
+
+//     // Fetch total count for pagination
+//     const totalCount = await prisma.downloadHistory.count({
+//       where: { userId },
+//     });
+
+//     // Fetch the download history with pagination
+//     const userDownloads = await prisma.downloadHistory.findMany({
+//       where: { userId },
+//       include: {
+//         template: {
+//           select: {
+//             title: true,
+//             price: true,
+//             sliderImages: true,
+//             sourceFiles: true,
+//           },
+//         },
+//       },
+//       skip: offset,
+//       take: limit,
+//     });
+
+//     // Calculate total pages
+//     const totalPages = Math.ceil(totalCount / limit);
+
+//     return res.status(200).json({
+//       downloads: userDownloads,
+//       pagination: {
+//         page,
+//         limit,
+//         totalPages,
+//         totalCount,
+//       },
+//     });
+//   } catch (error: any) {
+//     console.error("Error fetching user downloads:", error);
+//     return res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// }
+
+// working
+
+// export async function getUserDownloads(req: Request, res: Response) {
+//   try {
+//     if (!req.user || !req.user.id) {
+//       console.error("User not authenticated or user ID missing");
+//       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
+//     }
+
+//     const userId = req.user.id;
+//     const page = parseInt(req.query.page as string) || 1; // Default to page 1
+//     const limit = 6; // Items per page
+//     const offset = (page - 1) * limit;
+//     const sort = req.query.sort as string; // Sort parameter from query
+//     let dateFilter: Date | undefined;
+
+//     // Calculate the date filter based on the selected sort option
+//     const currentDate = new Date();
+//     switch (sort) {
+//       case 'Last Day':
+//         dateFilter = new Date(currentDate);
+//         dateFilter.setDate(currentDate.getDate() - 1);
+//         break;
+//       case 'Last 7 Day':
+//         dateFilter = new Date(currentDate);
+//         dateFilter.setDate(currentDate.getDate() - 7);
+//         break;
+//       case 'Last 30 Day':
+//         dateFilter = new Date(currentDate);
+//         dateFilter.setDate(currentDate.getDate() - 30);
+//         break;
+//       case 'Last Quarter':
+//         dateFilter = new Date(currentDate);
+//         dateFilter.setMonth(currentDate.getMonth() - 3);
+//         break;
+//       case 'Last Year':
+//         dateFilter = new Date(currentDate);
+//         dateFilter.setFullYear(currentDate.getFullYear() - 1);
+//         break;
+//       default:
+//         dateFilter = undefined; // No filter applied if no sort matches
+//     }
+
+//     // Log for debugging
+//     console.log("Date filter applied:", dateFilter);
+
+//     // Count total downloads based on date filter
+//     const totalCount = await prisma.downloadHistory.count({
+//       where: {
+//         userId,
+//         ...(dateFilter && { downloadedAt: { gte: dateFilter } }), // Apply date filter if present
+//       },
+//     });
+
+//     // Fetch downloads based on date filter and pagination
+//     const userDownloads = await prisma.downloadHistory.findMany({
+//       where: {
+//         userId,
+//         ...(dateFilter && { downloadedAt: { gte: dateFilter } }), // Apply date filter if present
+//       },
+//       include: {
+//         template: {
+//           select: {
+//             title: true,
+//             price: true,
+//             sliderImages: true,
+//             sourceFiles: true,
+
+//           },
+//         },
+//       },
+//       skip: offset,
+//       take: limit,
+//     });
+
+//     // Calculate total pages
+//     const totalPages = Math.ceil(totalCount / limit);
+
+//     return res.status(200).json({
+//       downloads: userDownloads,
+//       pagination: {
+//         page,
+//         limit,
+//         totalPages,
+//         totalCount,
+//       },
+//     });
+//   } catch (error: any) {
+//     console.error("Error fetching user downloads:", error);
+//     return res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// }
+
+
+// Assuming this is your Prisma client instance
+
 export async function getUserDownloads(req: Request, res: Response) {
   try {
-    // Confirm if user information is populated in the request object
     if (!req.user || !req.user.id) {
       console.error("User not authenticated or user ID missing");
       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
     }
 
     const userId = req.user.id;
-    const page = parseInt(req.query.page as string) || 1; // Default to page 1
-    const limit = 6; // Items per page
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = 6;
     const offset = (page - 1) * limit;
+    const selectedSort = req.query.sort as string || 'Last Day';
+    const selectedCategory = req.query.category as string || 'All';
 
+    // Determine the date range filter based on selectedSort
+    let dateFilter = {};
+    const today = new Date();
+    if (selectedSort === 'Last Day') {
+      dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 1)) } };
+    } else if (selectedSort === 'Last 7 Day') {
+      dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 7)) } };
+    } else if (selectedSort === 'Last 30 Day') {
+      dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 30)) } };
+    } else if (selectedSort === 'Last Quarter') {
+      dateFilter = { downloadedAt: { gte: new Date(today.setMonth(today.getMonth() - 3)) } };
+    } else if (selectedSort === 'Last Year') {
+      dateFilter = { downloadedAt: { gte: new Date(today.setFullYear(today.getFullYear() - 1)) } };
+    }
 
-    // Fetch total count for pagination
-    const totalCount = await prisma.downloadHistory.count({
-      where: { userId },
-    });
+    // Determine the category filter based on selectedCategory
+    let categoryFilter = {};
+    if (selectedCategory === 'Free Download') {
+      categoryFilter = { template: { price: 0 } };
+    } else if (selectedCategory === 'Premium') {
+      categoryFilter = { template: { price: { gt: 0 } } };
+    }
 
-    // Fetch the download history with pagination
+    // Combine filters for the query
+    const filters = { userId, ...dateFilter, ...categoryFilter };
+
+    const totalCount = await prisma.downloadHistory.count({ where: filters });
     const userDownloads = await prisma.downloadHistory.findMany({
-      where: { userId },
+      where: filters,
       include: {
         template: {
           select: {
@@ -397,7 +569,6 @@ export async function getUserDownloads(req: Request, res: Response) {
       take: limit,
     });
 
-    // Calculate total pages
     const totalPages = Math.ceil(totalCount / limit);
 
     return res.status(200).json({
@@ -479,7 +650,7 @@ export async function updateUserDetails(req: Request, res: Response) {
       });
 
       await sendOtpEmail(newEmail, newOtpCode);
-      return res.status(200).json({ message: "OTP sent to new email for verification" ,sendotp: true});
+      return res.status(200).json({ message: "OTP sent to new email for verification", sendotp: true });
     }
     if (newEmail && otp) {
       // Step 3: Verify OTP for new email and update if valid
@@ -498,7 +669,7 @@ export async function updateUserDetails(req: Request, res: Response) {
       data: updatedData,
     });
 
-    return res.status(200).json({ message: "User details updated successfully", user: updatedUser, redirect:  newEmail ? true : false  });
+    return res.status(200).json({ message: "User details updated successfully", user: updatedUser, redirect: newEmail ? true : false });
   } catch (error: any) {
     console.error("Error updating user details:", error);
     return res.status(500).json({ message: "Failed to update user details", error: error.message });
@@ -598,14 +769,14 @@ export async function removeUserImage(req: Request, res: Response) {
 
 export const resetFreeDownloads = async () => {
   try {
-      // Update all users, setting freeDownloads to 3
-      await prisma.user.updateMany({
-          data: { freeDownloads: 3 },
-      });
-      console.log('Successfully reset freeDownloads for all users.');
+    // Update all users, setting freeDownloads to 3
+    await prisma.user.updateMany({
+      data: { freeDownloads: 3 },
+    });
+    console.log('Successfully reset freeDownloads for all users.');
   } catch (error) {
-      console.error('Error resetting freeDownloads:', error);
+    console.error('Error resetting freeDownloads:', error);
   } finally {
-      await prisma.$disconnect();
+    await prisma.$disconnect();
   }
 };

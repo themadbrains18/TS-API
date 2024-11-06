@@ -530,7 +530,7 @@ export async function getTemplateByTitle(req: Request, res: Response) {
   const query = typeof req.query.query === 'string' ? req.query.query : undefined;
   const subCategoryId = typeof req.query.subCategoryId === 'string' ? req.query.subCategoryId : undefined;
 
-  console.log(subCategoryId, "==jhkjhkjh", query);
+  // console.log(subCategoryId, "==jhkjhkjh", query);
 
   // Early return if query is empty
   if (!query) {

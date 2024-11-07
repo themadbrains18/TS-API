@@ -10,37 +10,73 @@ import { deleteFileFromFirebase, uploadFileToFirebase } from '../services/fileSe
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 const TOKEN_EXPIRY = '8h'; // JWT Token expires in 8 hours
 
-// Generate JWT Token
+/**
+ * Generates a JWT token for the given user ID.
+ * 
+ * @param {string} userId - The ID of the user for whom the token is generated.
+ * @returns {string} - The generated JWT token.
+ */
 function generateToken(userId: string): string {
   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
 }
 
-// Generate a random 6-digit OTP
+
+/**
+ * Generates a random 6-digit OTP (One-Time Password).
+ * 
+ * @returns {string} - A 6-digit OTP as a string.
+ * Note: Currently, this function returns a static value ('123456').
+ * To use a truly random OTP, uncomment the `crypto.randomInt` line.
+ */
 function generateOtp(): string {
   // return crypto.randomInt(100000, 999999).toString();
-  return '123456'
+  return '123456';
 }
 
-// Set OTP expiration time (e.g., 10 minutes from now)
+
+/**
+ * Sets the OTP expiration time.
+ * 
+ * @returns {Date} - A Date object representing the expiration time (e.g., 1 minute from now).
+ * Note: Adjust the time by modifying the `setMinutes` parameter.
+ */
 function otpExpiryTime(): Date {
   const now = new Date();
   now.setMinutes(now.getMinutes() + 1);
   return now;
 }
 
-// Hash password
+/**
+ * Hashes a given password using bcrypt.
+ * 
+ * @param {string} password - The plaintext password to be hashed.
+ * @returns {Promise<string>} - A promise that resolves to the hashed password.
+ */
 async function hashPassword(password: string): Promise<string> {
   const saltRounds = 10;
   return bcrypt.hash(password, saltRounds);
 }
 
-// Compare password
+/**
+ * Compares an entered password with a stored hashed password.
+ * 
+ * @param {string} enteredPassword - The plaintext password to check.
+ * @param {string} storedPassword - The hashed password stored in the database.
+ * @returns {Promise<boolean>} - A promise that resolves to `true` if the passwords match, otherwise `false`.
+ */
 async function comparePassword(enteredPassword: string, storedPassword: string): Promise<boolean> {
   return bcrypt.compare(enteredPassword, storedPassword);
 }
 
 
-// ================================== Register User ==================================
+/**
+ * Handles user registration.
+ * 
+ * @param {Request} req - The request object, expected to contain `name`, `email`, `password`, `confirmPassword`, and optionally `otp` in the body.
+ * @param {Response} res - The response object used to send responses back to the client.
+ * @returns {Promise<Response>} - Sends a response with status and message about registration.
+ * 
+ */
 export async function register(req: Request, res: Response) {
   const { name, email, password, confirmPassword, otp } = req.body;
 
@@ -55,6 +91,9 @@ export async function register(req: Request, res: Response) {
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
 
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists. Please log in.' });
+    }
 
     if (!otp) {
       const otpCode = generateOtp();
@@ -65,18 +104,12 @@ export async function register(req: Request, res: Response) {
       });
 
       await sendOtpEmail(email, otpCode);
-
-
-    }
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists. Please log in.' });
     }
     if (otp) {
       const verificationResponse = await verifyOtp(req);
 
       console.log(verificationResponse, "==response");
 
-      // Check if OTP verification was successful
       if (verificationResponse.status === 200) {
         const hashedPassword = await hashPassword(password);
         const newUser: User = await prisma.user.create({
@@ -89,8 +122,6 @@ export async function register(req: Request, res: Response) {
       }
     }
 
-
-
     return res.status(201).json({
       results: { message: 'User registered successfully. OTP sent to email.', otp: true }
     });
@@ -101,7 +132,14 @@ export async function register(req: Request, res: Response) {
 }
 
 
-// ================================== Login User ==================================
+/**
+ * Handles user login.
+ * 
+ * @param {Request} req - The request object, expected to contain `email`, `password`, and optionally `otp` in the body.
+ * @param {Response} res - The response object used to send responses back to the client.
+ * @returns {Promise<Response>} - Sends a response with status and message about the login attempt.
+ * 
+ */
 export async function login(req: Request, res: Response) {
   const { email, password, otp } = req.body;
 
@@ -146,13 +184,13 @@ export async function login(req: Request, res: Response) {
           results: {
             message: 'Login successfull.',
             token,
-            data: { id: user.id, email: user.email, role: user.role, name: user.name,image:user.profileImg, freeDownloads:user.freeDownloads, number:user.number }
+            data: { id: user.id, email: user.email, role: user.role, name: user.name, image: user.profileImg, freeDownloads: user.freeDownloads, number: user.number }
           }
         });
       } else {
-        console.log("herer",verificationResponse.status);
-        
-        return res.status(verificationResponse.status).json({message:verificationResponse.message});
+        console.log("herer", verificationResponse.status);
+
+        return res.status(verificationResponse.status).json({ message: verificationResponse.message });
       }
 
 
@@ -165,9 +203,17 @@ export async function login(req: Request, res: Response) {
 }
 
 
-// ================================================================================================
-// -------------------------------------- Logout User ---------------------------------------------
-// ================================================================================================
+/**
+ * Handles user logout.
+ * 
+ * @param {Request} req - The request object, expected to contain `userId` in the body.
+ * @param {Response} res - The response object used to send responses back to the client.
+ * @returns {Promise<Response>} - Sends a response with status and message about the logout attempt.
+ * 
+ * - Updates the user's record in the database to set their `token` to `null`, effectively logging them out.
+ * - Responds with a success message upon successful logout.
+ * - Handles any errors and sends an appropriate response to the client.
+ */
 export async function logout(req: Request, res: Response) {
   try {
     const { userId } = req.body;
@@ -184,9 +230,14 @@ export async function logout(req: Request, res: Response) {
 }
 
 
-// ================================================================================================
-// -------------------------------------- Forget Password -----------------------------------------
-// ================================================================================================
+/**
+ * Handles the "Forget Password" process by generating and sending an OTP to the user's email.
+ * 
+ * @param {Request} req - The request object, expected to contain `email` in the body.
+ * @param {Response} res - The response object used to send responses back to the client.
+ * @returns {Promise<Response>} - Sends a response with status and message about the OTP sending process.
+ * 
+ */
 export async function forgetPassword(req: Request, res: Response) {
   const { email }: { email: string } = req.body;
 
@@ -219,9 +270,16 @@ export async function forgetPassword(req: Request, res: Response) {
 }
 
 
-// ================================================================================================
-// -------------------------------------- Reset Password with OTP ---------------------------------
-// ================================================================================================
+/**
+ * Handles password reset with OTP verification.
+ * 
+ * @param {Request} req - The request object, containing `email`, `otp`, `newPassword`, and `confirmPassword`.
+ * @param {Response} res - The response object used to send status and message back to the client.
+ * @returns {Promise<Response>} - Sends a response indicating the result of the password reset process.
+ * 
+ * - Checks if `email` and `otp` are provided and verifies user existence.
+ * - If `newPassword` is provided, validates, hashes, and updates the password; otherwise, verifies the OTP.
+ */
 export async function resetPasswordWithOtp(req: Request, res: Response) {
   const { email, otp, newPassword, confirmPassword }: { email: string; otp: string; newPassword: string; confirmPassword: string } = req.body;
 
@@ -279,9 +337,18 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
   }
 }
 
-// ================================================================================================
-// -------------------------------------- Verify OTP ----------------------------------------------
-// ================================================================================================
+/**
+ * Verifies the OTP for a given email.
+ * 
+ * @param {Request} req - The request object, containing `email` and `otp`.
+ * @returns {Promise<{ status: number; message: string }>} - Returns the status and message of OTP verification.
+ * 
+ * - Checks that both `email` and `otp` are provided.
+ * - Retrieves the OTP record from the database.
+ * - Verifies that the OTP is valid and not expired.
+ * - Deletes the OTP record after successful verification.
+ * - Handles errors and returns appropriate status and message.
+ */
 export async function verifyOtp(req: Request): Promise<{ status: number; message: string }> {
   const { email, otp }: { email: string; otp: string } = req.body;
 
@@ -310,9 +377,20 @@ export async function verifyOtp(req: Request): Promise<{ status: number; message
 }
 
 
-// ================================================================================================
-// -------------------------------------- Resend OTP ---------------------------------------------
-// ================================================================================================
+/**
+ * Resends the OTP to the user's email.
+ * 
+ * @param {Request} req - The request object, expected to contain `email` in the body.
+ * @param {Response} res - The response object used to send responses back to the client.
+ * @returns {Promise<Response>} - Sends a response indicating the status of the OTP resend process.
+ * 
+ * - Validates that `email` is provided.
+ * - Checks if a user with the provided email exists.
+ * - Generates a new OTP and sets its expiration time.
+ * - Updates or creates the OTP record in the database.
+ * - Sends the OTP to the user's email.
+ * - Handles errors and returns an appropriate response if an error occurs.
+ */
 export async function resendOtp(req: Request, res: Response) {
   const { email }: { email: string } = req.body;
 
@@ -343,11 +421,22 @@ export async function resendOtp(req: Request, res: Response) {
   }
 }
 
+
+
+/**
+ * Checks if the user is authenticated and retrieves user information from the database.
+ * 
+ * @param {Request} req - The request object, expected to contain the authenticated user's information.
+ * @param {Response} res - The response object used to send responses back to the client.
+ * @returns {Promise<Response>} - Sends a response containing the user data if authenticated, or an error message if unauthorized.
+ * 
+ * - Verifies that the `user` object is present in the request, indicating authentication.
+ * - If the user is authenticated, retrieves the user's information from the database.
+ * - Sends a success response with the user data if the user exists.
+ * - Handles errors and sends an appropriate response if the user is not authenticated or if there are any issues with the database query.
+ */
 export async function checkUser(req: Request, res: Response) {
-
   try {
-
-
     // Confirm if user information is populated in the request object
     if (!req.user || !req.user.id) {
       console.error("User not authenticated or user ID missing");
@@ -365,232 +454,23 @@ export async function checkUser(req: Request, res: Response) {
   }
 }
 
-// export async function getUserDownloads(req: Request, res: Response) {
-//   try {
-//     // Confirm if user information is populated in the request object
-//     if (!req.user || !req.user.id) {
-//       console.error("User not authenticated or user ID missing");
-//       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
-//     }
 
-//     const userId = req.user.id;
-//     const page = parseInt(req.query.page as string) || 1; // Default to page 1
-//     const limit = 6; // Items per page
-//     const offset = (page - 1) * limit;
-
-
-//     // Fetch total count for pagination
-//     const totalCount = await prisma.downloadHistory.count({
-//       where: { userId },
-//     });
-
-//     // Fetch the download history with pagination
-//     const userDownloads = await prisma.downloadHistory.findMany({
-//       where: { userId },
-//       include: {
-//         template: {
-//           select: {
-//             title: true,
-//             price: true,
-//             sliderImages: true,
-//             sourceFiles: true,
-//           },
-//         },
-//       },
-//       skip: offset,
-//       take: limit,
-//     });
-
-//     // Calculate total pages
-//     const totalPages = Math.ceil(totalCount / limit);
-
-//     return res.status(200).json({
-//       downloads: userDownloads,
-//       pagination: {
-//         page,
-//         limit,
-//         totalPages,
-//         totalCount,
-//       },
-//     });
-//   } catch (error: any) {
-//     console.error("Error fetching user downloads:", error);
-//     return res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// }
-
-// working
-
-// export async function getUserDownloads(req: Request, res: Response) {
-//   try {
-//     if (!req.user || !req.user.id) {
-//       console.error("User not authenticated or user ID missing");
-//       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
-//     }
-
-//     const userId = req.user.id;
-//     const page = parseInt(req.query.page as string) || 1; // Default to page 1
-//     const limit = 6; // Items per page
-//     const offset = (page - 1) * limit;
-//     const sort = req.query.sort as string; // Sort parameter from query
-//     let dateFilter: Date | undefined;
-
-//     // Calculate the date filter based on the selected sort option
-//     const currentDate = new Date();
-//     switch (sort) {
-//       case 'Last Day':
-//         dateFilter = new Date(currentDate);
-//         dateFilter.setDate(currentDate.getDate() - 1);
-//         break;
-//       case 'Last 7 Day':
-//         dateFilter = new Date(currentDate);
-//         dateFilter.setDate(currentDate.getDate() - 7);
-//         break;
-//       case 'Last 30 Day':
-//         dateFilter = new Date(currentDate);
-//         dateFilter.setDate(currentDate.getDate() - 30);
-//         break;
-//       case 'Last Quarter':
-//         dateFilter = new Date(currentDate);
-//         dateFilter.setMonth(currentDate.getMonth() - 3);
-//         break;
-//       case 'Last Year':
-//         dateFilter = new Date(currentDate);
-//         dateFilter.setFullYear(currentDate.getFullYear() - 1);
-//         break;
-//       default:
-//         dateFilter = undefined; // No filter applied if no sort matches
-//     }
-
-//     // Log for debugging
-//     console.log("Date filter applied:", dateFilter);
-
-//     // Count total downloads based on date filter
-//     const totalCount = await prisma.downloadHistory.count({
-//       where: {
-//         userId,
-//         ...(dateFilter && { downloadedAt: { gte: dateFilter } }), // Apply date filter if present
-//       },
-//     });
-
-//     // Fetch downloads based on date filter and pagination
-//     const userDownloads = await prisma.downloadHistory.findMany({
-//       where: {
-//         userId,
-//         ...(dateFilter && { downloadedAt: { gte: dateFilter } }), // Apply date filter if present
-//       },
-//       include: {
-//         template: {
-//           select: {
-//             title: true,
-//             price: true,
-//             sliderImages: true,
-//             sourceFiles: true,
-
-//           },
-//         },
-//       },
-//       skip: offset,
-//       take: limit,
-//     });
-
-//     // Calculate total pages
-//     const totalPages = Math.ceil(totalCount / limit);
-
-//     return res.status(200).json({
-//       downloads: userDownloads,
-//       pagination: {
-//         page,
-//         limit,
-//         totalPages,
-//         totalCount,
-//       },
-//     });
-//   } catch (error: any) {
-//     console.error("Error fetching user downloads:", error);
-//     return res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// }
-
-
-// Assuming this is your Prisma client instance
-
-// export async function getUserDownloads(req: Request, res: Response) {
-//   try {
-//     if (!req.user || !req.user.id) {
-//       console.error("User not authenticated or user ID missing");
-//       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
-//     }
-
-//     const userId = req.user.id;
-//     const page = parseInt(req.query.page as string) || 1;
-//     const limit = 6;
-//     const offset = (page - 1) * limit;
-//     const selectedSort = req.query.sort as string || 'Last Day';
-//     const selectedCategory = req.query.category as string || 'All';
-
-//     // Determine the date range filter based on selectedSort
-//     let dateFilter = {};
-//     const today = new Date();
-//     if (selectedSort === 'Last Day') {
-//       dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 1)) } };
-//     } else if (selectedSort === 'Last 7 Day') {
-//       dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 7)) } };
-//     } else if (selectedSort === 'Last 30 Day') {
-//       dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 30)) } };
-//     } else if (selectedSort === 'Last Quarter') {
-//       dateFilter = { downloadedAt: { gte: new Date(today.setMonth(today.getMonth() - 3)) } };
-//     } else if (selectedSort === 'Last Year') {
-//       dateFilter = { downloadedAt: { gte: new Date(today.setFullYear(today.getFullYear() - 1)) } };
-//     }
-
-//     // Determine the category filter based on selectedCategory
-//     let categoryFilter = {};
-//     if (selectedCategory === 'Free Download') {
-//       categoryFilter = { template: { price: 0 } };
-//     } else if (selectedCategory === 'Premium') {
-//       categoryFilter = { template: { price: { gt: 0 } } };
-//     }
-
-//     // Combine filters for the query
-//     const filters = { userId, ...dateFilter, ...categoryFilter };
-
-//     const totalCount = await prisma.downloadHistory.count({ where: filters });
-//     const userDownloads = await prisma.downloadHistory.findMany({
-//       where: filters,
-//       include: {
-//         template: {
-//           select: {
-//             title: true,
-//             price: true,
-//             sliderImages: true,
-//             sourceFiles: true,
-//           },
-//         },
-//       },
-//       skip: offset,
-//       take: limit,
-//     });
-
-//     const totalPages = Math.ceil(totalCount / limit);
-
-//     return res.status(200).json({
-//       downloads: userDownloads,
-//       pagination: {
-//         page,
-//         limit,
-//         totalPages,
-//         totalCount,
-//       },
-//     });
-//   } catch (error: any) {
-//     console.error("Error fetching user downloads:", error);
-//     return res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// }
-
-
-// API to update user details with OTP verification for email change
+/**
+ * Updates user details such as name, number, and email with OTP verification for email change.
+ * 
+ * @param {Request} req - The request object, expected to contain user data and OTP details in the body.
+ * @param {Response} res - The response object used to send responses back to the client.
+ * @returns {Promise<Response>} - Sends a response with a success message or error based on the OTP verification and user update process.
+ * 
+ * - Verifies the presence of `user.id` in the request to ensure the user is authenticated.
+ * - Handles updates to the user's `name` and `number` if provided.
+ * - If `currentEmail` is provided without `otp`, it sends an OTP to the current email for verification.
+ * - If `currentEmail` and `otp` are provided, it verifies the OTP for the current email.
+ * - If `newEmail` is provided without OTP, it sends an OTP to the new email for verification.
+ * - If `newEmail` and `otp` are provided, it verifies the OTP for the new email and updates the email address.
+ * - Applies the changes to the user in the database and returns the updated user data along with a success message.
+ * - Handles errors and sends appropriate responses if any step in the process fails.
+ */
 export async function updateUserDetails(req: Request, res: Response) {
   const { name, number, currentEmail, newEmail, otp } = req.body;
 
@@ -678,30 +558,21 @@ export async function updateUserDetails(req: Request, res: Response) {
     return res.status(500).json({ message: "Failed to update user details", error: error.message });
   }
 }
-  // // Final Step: If OTP for new email is verified, update user email
-  // if (newEmail && !otp) {
-  //   const newOtpRecord = await prisma.otp.findUnique({ where: { email: newEmail } });
-  //   if (!newOtpRecord || newOtpRecord.code !== otp || newOtpRecord.expiresAt < new Date()) {
-  //     return res.status(400).json({ message: "Invalid or expired OTP on new email" });
-  //   }
 
-  //   // If OTP is valid, update the email in the user record
-  //   updatedData.email = newEmail;
-  // }
 
-  // // Update the user record with any other provided details
-  // const updatedUser = await prisma.user.update({
-  //   where: { id: id },
-  //   data: updatedData,
-  // });
 
-//   return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
-// } catch (error: any) {
-//   console.error("Error updating user details:", error);
-//   return res.status(500).json({ message: "Failed to update user details", error: error.message });
-// }
-// }
-
+/**
+ * Fetches a paginated list of user downloads with optional filters for date range and category.
+ * 
+ * @param {Request} req - The request object with `user.id`, `page`, `sort`, and `category` query parameters.
+ * @param {Response} res - The response object for sending data or error messages.
+ * @returns {Promise<Response>} - A response containing the download data, pagination info, or error message.
+ * 
+ * - Verifies user authentication.
+ * - Supports filters for date range (`sort`) and download category (`category`).
+ * - Returns paginated download data with template details (title, price, images).
+ * - Handles errors and sends appropriate responses.
+ */
 export async function getUserDownloads(req: Request, res: Response) {
   try {
     if (!req.user || !req.user.id) {
@@ -777,6 +648,20 @@ export async function getUserDownloads(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 }
+
+
+
+/**
+ * Fetches the count of free downloads and user's profile image.
+ * 
+ * @param {Request} req - The request object containing `user.id`.
+ * @param {Response} res - The response object to send back the download count and profile image.
+ * @returns {Promise<Response>} - A response containing the user's free download count and profile image or an error message.
+ * 
+ * - Verifies user authentication.
+ * - Fetches the count of free downloads and profile image for the authenticated user.
+ * - Sends the download count and profile image in the response.
+ */
 export async function getFreeDownload(req: Request, res: Response) {
   try {
     if (!req.user || !req.user.id) {
@@ -785,11 +670,13 @@ export async function getFreeDownload(req: Request, res: Response) {
     }
 
     const userId = req.user.id;
-   const count =  await prisma.user.findUnique({where:{id:userId},
-  select:{
-    freeDownloads:true,
-    profileImg:true
-  }})
+    const count = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        freeDownloads: true,
+        profileImg: true
+      }
+    })
 
     return res.status(200).json({
       downloads: count
@@ -802,6 +689,19 @@ export async function getFreeDownload(req: Request, res: Response) {
 
 
 
+
+/**
+ * Updates the profile image for the authenticated user.
+ * 
+ * @param {Request} req - The request object containing user ID and image file.
+ * @param {Response} res - The response object that sends the updated user profile image.
+ * @returns {Promise<Response>} - A response with the updated profile image or an error message.
+ * 
+ * - Verifies that the user is authenticated and the image file is provided.
+ * - Uploads the profile image to Firebase and gets the URL.
+ * - Updates the user's profile image URL in the database.
+ * - Sends a response with a success message and the updated user data.
+ */
 export async function updateUserImage(req: Request, res: Response) {
   try {
     const userId = req.user?.id;
@@ -815,7 +715,6 @@ export async function updateUserImage(req: Request, res: Response) {
     const profileImageUrl = await uploadFileToFirebase(req.file, 'profileImg');
 
     console.log(profileImageUrl, "=profileImageUrl");
-
 
     // Update the user's profile image in the database
     const updatedUser = await prisma.user.update({
@@ -833,6 +732,19 @@ export async function updateUserImage(req: Request, res: Response) {
   }
 }
 
+
+/**
+ * Removes the profile image for the authenticated user.
+ * 
+ * @param {Request} req - The request object containing user ID.
+ * @param {Response} res - The response object that sends the status of profile image removal.
+ * @returns {Promise<Response>} - A response with the success message or an error message.
+ * - Verifies that the user is authenticated.
+ * - Fetches the user's current profile image from the database.
+ * - Deletes the profile image from Firebase.
+ * - Updates the user's profile image field to null in the database.
+ * - Sends a response confirming the removal of the profile image.
+ */
 export async function removeUserImage(req: Request, res: Response) {
   try {
     const userId = req.user?.id;
@@ -867,9 +779,18 @@ export async function removeUserImage(req: Request, res: Response) {
   }
 }
 
+
+
+/**
+ * Resets the free download count for all users to 3.
+ * @returns {Promise<void>} - A promise that resolves when the free download count is successfully reset.
+ * - Updates the `freeDownloads` field for all users in the database to 3.
+ * - Logs a success message upon completion.
+ * - Catches and logs any errors that occur during the update process.
+ * - Ensures proper disconnection from the Prisma client in the `finally` block.
+ */
 export const resetFreeDownloads = async () => {
   try {
-    // Update all users, setting freeDownloads to 3
     await prisma.user.updateMany({
       data: { freeDownloads: 3 },
     });
@@ -881,16 +802,33 @@ export const resetFreeDownloads = async () => {
   }
 };
 
-
-// Delete user account by ID
-export const deleteUser = async (req:Request, res:Response) => {
-  const { id } = req.params;
+/**
+ * Deletes a user account and related records from the database.
+ * @param {Request} req - The request object containing the authenticated user's ID.
+ * @param {Response} res - The response object to send back the result of the deletion process.
+ * @returns {Promise<Response>} - A response indicating whether the user account was successfully deleted or if an error occurred.
+ * - Verifies if the user exists in the database.
+ * - Deletes the user along with related records (`templates`, `downloadHistory`) using cascading deletion.
+ * - Sends a success message if the user is deleted.
+ * - Handles any errors that occur during the deletion process and returns an appropriate error message.
+ */
+export const deleteUser = async (req: Request, res: Response) => {
+  const userId = req.user?.id;
 
   try {
-    // Delete the user and cascade deletion to related records
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId
+      }
+    })
+    if (!user) {
+      return res.status(400).json({ message: 'User not exist' });
+    }
+
     await prisma.user.delete({
-      where: { id },
-    });
+      where: { id: userId },
+      include: { templates: true, downloadHistory: true }
+    })
 
     return res.status(200).json({ message: 'User account deleted successfully' });
   } catch (error) {

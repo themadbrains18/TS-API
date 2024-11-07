@@ -14,27 +14,34 @@ import { createSoftwareType, getSoftwareTypes, getSoftwareTypeById, updateSoftwa
 import { createIndustryType, getIndustryTypes, getIndustryTypeById, updateIndustryType, deleteIndustryType, } from '../controllers/industryTypeController';
 import { createTemplateSchema, deleteTemplateSchema, getAllTemplatesByUserIdSchema, getTemplateByIdSchema, updateTemplateSchema } from '../dto/template.dto';
 
-// Initialize the router
+/**
+ * Initialize the router
+ */
 const router = Router();
 
-// Authentication routes
-router.post('/register', validateData(userSignUpSchema), register); // Register a new user
-router.post('/login', validateData(userLoginSchema), login); // Log in an existing user
-router.post('/verify-otp', verifyOtp);
-router.post('/resend-otp', resendOtp);
-router.post('/logout', logout);
-router.post('/forget-password', forgetPassword);
-router.post('/reset-password', resetPasswordWithOtp);
-router.get('/get-user', authenticateToken, checkUser);
-router.get('/get-user-downloads', authenticateToken, getUserDownloads);
-router.put('/update-details',authenticateToken, updateUserDetails);
-router.delete('/delete-account/:id', deleteUser);
-router.get('/free-download', authenticateToken, getFreeDownload)
+/**
+ * Authentication routes
+ */
+router.post('/register', validateData(userSignUpSchema), register); // Register a new user with validation
+router.post('/login', validateData(userLoginSchema), login); // Log in an existing user with validation
+router.post('/verify-otp', verifyOtp); // Verify OTP for user authentication
+router.post('/resend-otp', resendOtp); // Resend OTP for user verification
+router.post('/logout', logout); // Log out the current user
+router.post('/forget-password', forgetPassword); // Handle forgot password request
+router.post('/reset-password', resetPasswordWithOtp); // Reset user password with OTP verification
+router.get('/get-user', authenticateToken, checkUser); // Get current user details if authenticated
+router.get('/get-user-downloads', authenticateToken, getUserDownloads); // Get the user's download history
+router.put('/update-details', authenticateToken, updateUserDetails); // Update user details if authenticated
+router.delete('/delete-account', authenticateToken, deleteUser); // Delete user account if authenticated
+router.get('/free-download', authenticateToken, getFreeDownload); // Get free download for authenticated user
 
-router.put('/user/update-image', authenticateToken, uploadSingleImageFile, multerErrorHandler, updateUserImage);
-router.delete('/user/remove-image', authenticateToken,  removeUserImage);
 
-// Template routes
+router.put('/user/update-image', authenticateToken, uploadSingleImageFile, multerErrorHandler, updateUserImage); // Update user profile image with authentication and file validation
+router.delete('/user/remove-image', authenticateToken, removeUserImage); // Remove user profile image if authenticated
+
+/**
+ * Template routes
+ */
 router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, createTemplate); // Create a new template (with file upload)
 router.post('/templates/:id/download', templateDownloads); // record a download for a template
 router.get('/templates', getTemplates); // Get all templates by pagination
@@ -49,46 +56,56 @@ router.get('/templates/search', getTemplateByTitle); // Get a specific template 
 router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken, updateTemplate); // Update a specific template by ID
 router.delete('/templates/:id',  authenticateToken, deleteTemplate); // Delete a specific template by ID
 
-// Template Type routes
+/**
+ * Template Type routes
+ */
 router.post('/template-types', authenticateToken, createTemplateType); // Create a new TemplateType
 router.get('/template-types', getTemplateTypes); // Get all TemplateTypes
 router.get('/template-types/:id', getTemplateTypeById); // Get TemplateType by ID
 router.put('/template-types/:id', authenticateToken, updateTemplateType); // Update TemplateType by ID
 router.delete('/template-types/:id', authenticateToken, deleteTemplateType); // Delete TemplateType by ID
 
-// Sub Categories routes
+/**
+ * Sub Categories routes
+ */
 router.post('/sub-categories', authenticateToken, createSubCategory); // Create a subcategory
 router.get('/sub-categories', getSubCategories); // Get all subcategories
 router.get('/sub-categories/:id', getSubCategoryById); // Get a subcategory by Template ID
 router.put('/sub-categories/:id', authenticateToken, updateSubCategory); // Update a subcategory
 router.delete('/sub-categories/:id', authenticateToken, deleteSubCategory); // Delete a subcategory
 
-// Software-types Route definitions
+/**
+ * Software-types Route definitions
+ */
 router.post('/software-types', authenticateToken, createSoftwareType); // Create a new software type
 router.get('/software-types', getSoftwareTypes); // Get all software types
 router.get('/software-types/:id', getSoftwareTypeById); // Get a software type by Template ID
 router.put('/software-types/:id', authenticateToken, updateSoftwareType); // Update a software type
 router.delete('/software-types/:id', authenticateToken, deleteSoftwareType); // Delete a software type
 
-// Industry-type Routes definitions
+/**
+ * Industry-type Routes definitions
+ */
 router.post('/industry-type', authenticateToken, createIndustryType); // Create a new industry type
 router.get('/industry-type', getIndustryTypes); // Get all industry types
 router.get('/industry-type/:id', getIndustryTypeById); // Get an industry type by ID
 router.put('/industry-type/:id', authenticateToken, updateIndustryType); // Update an industry type
 router.delete('/industry-type/:id', authenticateToken, deleteIndustryType); // Delete an industry type
 
-// Credit routes
+/**
+ * Credit routes
+ */
 router.post('/credits', authenticateToken, createCredit); // Create a new credit entry
 router.get('/credits/:templateId', authenticateToken, getCredits); // Get credits for a specific template
 router.put('/credits/:id', authenticateToken, updateCredit); // Update a specific credit entry by ID
 router.delete('/credits/:id', authenticateToken, deleteCredit); // Delete a specific credit entry by ID
 
-// Technical Detail routes
+/**
+ * Technical Detail routes
+ */
 router.post('/technical-details', authenticateToken, createTechnicalDetail); // Create a new technical detail entry
 router.get('/technical-details/:templateId', authenticateToken, getTechnicalDetails); // Get technical details for a specific template
 router.put('/technical-details/:id', authenticateToken, updateTechnicalDetail); // Update a specific technical detail entry by ID
 router.delete('/technical-details/:id', authenticateToken, deleteTechnicalDetail); // Delete a specific technical detail entry by ID
 
-
-// Export the router to be used in the main application
 export default router;

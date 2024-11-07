@@ -29,8 +29,8 @@ function generateToken(userId: string): string {
  * To use a truly random OTP, uncomment the `crypto.randomInt` line.
  */
 function generateOtp(): string {
-  return crypto.randomInt(100000, 999999).toString();
-  // return '123456';
+  // return crypto.randomInt(100000, 999999).toString();
+  return '123456';
 }
 
 

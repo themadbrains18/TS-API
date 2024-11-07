@@ -6,7 +6,7 @@ import { userLoginSchema, userSignUpSchema } from '../dto/user.dto';
 import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser, updateUserDetails, updateUserImage, getUserDownloads, removeUserImage, deleteUser, getFreeDownload } from '../controllers/authController';
 import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, featureTemplates, getTemplateByTitle, } from '../controllers/templateController';
 import { createCredit, getCredits, updateCredit, deleteCredit, } from '../controllers/creditController';
-import { createTechnicalDetail, getTechnicalDetails, updateTechnicalDetail, deleteTechnicalDetail, } from '../controllers/technicalDetailController';
+// import { createTechnicalDetail, getTechnicalDetails, updateTechnicalDetail, deleteTechnicalDetail, } from '../controllers/technicalDetailController';
 import { authenticateToken } from '../middlewares/authMiddleware';
 import { createTemplateType, getTemplateTypes, getTemplateTypeById, updateTemplateType, deleteTemplateType, } from '../controllers/templateTypeController';
 import { createSubCategory, getSubCategories, getSubCategoryById, updateSubCategory, deleteSubCategory, } from '../controllers/subCategoryController';
@@ -100,12 +100,12 @@ router.get('/credits/:templateId', authenticateToken, getCredits); // Get credit
 router.put('/credits/:id', authenticateToken, updateCredit); // Update a specific credit entry by ID
 router.delete('/credits/:id', authenticateToken, deleteCredit); // Delete a specific credit entry by ID
 
-/**
- * Technical Detail routes
- */
-router.post('/technical-details', authenticateToken, createTechnicalDetail); // Create a new technical detail entry
-router.get('/technical-details/:templateId', authenticateToken, getTechnicalDetails); // Get technical details for a specific template
-router.put('/technical-details/:id', authenticateToken, updateTechnicalDetail); // Update a specific technical detail entry by ID
-router.delete('/technical-details/:id', authenticateToken, deleteTechnicalDetail); // Delete a specific technical detail entry by ID
+// /**
+//  * Technical Detail routes
+//  */
+// router.post('/technical-details', authenticateToken, createTechnicalDetail); // Create a new technical detail entry
+// router.get('/technical-details/:templateId', authenticateToken, getTechnicalDetails); // Get technical details for a specific template
+// router.put('/technical-details/:id', authenticateToken, updateTechnicalDetail); // Update a specific technical detail entry by ID
+// router.delete('/technical-details/:id', authenticateToken, deleteTechnicalDetail); // Delete a specific technical detail entry by ID
 
 export default router;

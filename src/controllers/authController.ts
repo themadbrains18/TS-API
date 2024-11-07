@@ -1,9 +1,9 @@
-import { Request, Response, Router } from 'express';
+import { Request, Response, } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../server';
+import { User } from '@prisma/client';
 import crypto from 'crypto';
-import { User, Otp } from '@prisma/client';
 import { sendOtpEmail } from '../services/nodeMailer';
 import { deleteFileFromFirebase, uploadFileToFirebase } from '../services/fileService';
 
@@ -29,8 +29,8 @@ function generateToken(userId: string): string {
  * To use a truly random OTP, uncomment the `crypto.randomInt` line.
  */
 function generateOtp(): string {
-  // return crypto.randomInt(100000, 999999).toString();
-  return '123456';
+  return crypto.randomInt(100000, 999999).toString();
+  // return '123456';
 }
 
 

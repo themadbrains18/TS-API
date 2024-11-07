@@ -91,7 +91,7 @@ export async function register(req: Request, res: Response) {
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists. Please log in.' });
+      return res.status(400).json({ message: 'Email already exists.' });
     }
 
     if (!otp) {

@@ -374,7 +374,7 @@ export const getAllTemplates = async (req: Request, res: Response) => {
       }
     });
 
-    return res.json({ results: { templates: latestTemplates, message: "data fecht success" } });
+    return res.json({ results: { templates: latestTemplates } });
   } catch (error) {
     console.error("Error fetching latest templates:", error);
     return res.status(500).json({ message: "Failed to fetch latest templates", error });
@@ -417,7 +417,7 @@ export const featureTemplates = async (req: Request, res: Response) => {
       take: 6  // Limit to 6 templates
     });
 
-    return res.json({ results: { templates: featureTemplates, message: "data fecht success" } });
+    return res.json({ results: { templates: featureTemplates } });
   } catch (error) {
     console.error("Error fetching feature templates:", error);
     return res.status(500).json({ message: "Failed to fetch feature Templates ", error });
@@ -507,7 +507,7 @@ export const templateDownloads = async (req: Request, res: Response) => {
         await sendTemplateEmail(user.email, url, templateData?.title, user?.name)
 
       } else {
-        return res.status(403).json({ message: 'No free downloads available.' });
+        return res.status(403).json({ message: "You've reached your daily download limit!" });
       }
     } else if (!userId && email) {
       // Logic for unregistered users (e.g., tracking downloads by email)

@@ -1,9 +1,9 @@
-import { Request, Response, Router } from 'express';
+import { Request, Response, } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../server';
+import { User } from '@prisma/client';
 import crypto from 'crypto';
-import { User, Otp } from '@prisma/client';
 import { sendOtpEmail } from '../services/nodeMailer';
 import { deleteFileFromFirebase, uploadFileToFirebase } from '../services/fileService';
 
@@ -90,7 +90,6 @@ export async function register(req: Request, res: Response) {
 
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
-
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists. Please log in.' });
     }
@@ -313,7 +312,7 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
       });
 
 
-      return res.status(200).json({ message: 'Password reset successfully.' });
+      return res.status(200).json({ message: 'Password reset successfully.', });
     }
     else {
       const userOtp = await prisma.otp.findUnique({ where: { email: email } });

@@ -55,6 +55,9 @@ export async function register(req: Request, res: Response) {
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
 
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists. Please log in.' });
+    }
 
     if (!otp) {
       const otpCode = generateOtp();
@@ -65,11 +68,6 @@ export async function register(req: Request, res: Response) {
       });
 
       await sendOtpEmail(email, otpCode);
-
-
-    }
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists. Please log in.' });
     }
     if (otp) {
       const verificationResponse = await verifyOtp(req);
@@ -88,8 +86,6 @@ export async function register(req: Request, res: Response) {
         return res.status(verificationResponse.status).json(verificationResponse);
       }
     }
-
-
 
     return res.status(201).json({
       results: { message: 'User registered successfully. OTP sent to email.', otp: true }

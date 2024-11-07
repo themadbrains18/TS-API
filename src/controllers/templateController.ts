@@ -416,7 +416,7 @@ export const templateDownloads = async (req: Request, res: Response) => {
         await sendTemplateEmail(user.email, url, templateData?.title, user?.name)
 
       } else {
-        return res.status(403).json({ message: 'No free downloads available.' });
+        return res.status(403).json({ message: "You've reached your daily download limit!" });
       }
     } else if (!userId && email) {
       // Logic for unregistered users (e.g., tracking downloads by email)

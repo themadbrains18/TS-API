@@ -54,7 +54,9 @@ export async function register(req: Request, res: Response) {
 
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
-
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists. Please log in.' });
+    }
 
     if (!otp) {
       const otpCode = generateOtp();
@@ -146,13 +148,13 @@ export async function login(req: Request, res: Response) {
           results: {
             message: 'Login successfull.',
             token,
-            data: { id: user.id, email: user.email, role: user.role, name: user.name,image:user.profileImg, freeDownloads:user.freeDownloads, number:user.number }
+            data: { id: user.id, email: user.email, role: user.role, name: user.name, image: user.profileImg, freeDownloads: user.freeDownloads, number: user.number }
           }
         });
       } else {
-        console.log("herer",verificationResponse.status);
-        
-        return res.status(verificationResponse.status).json({message:verificationResponse.message});
+        console.log("herer", verificationResponse.status);
+
+        return res.status(verificationResponse.status).json({ message: verificationResponse.message });
       }
 
 
@@ -252,7 +254,7 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
       });
 
 
-      return res.status(200).json({ message: 'Password reset successfully.' });
+      return res.status(200).json({ message: 'Password reset successfully.', });
     }
     else {
       const userOtp = await prisma.otp.findUnique({ where: { email: email } });
@@ -675,22 +677,22 @@ export async function updateUserDetails(req: Request, res: Response) {
     return res.status(500).json({ message: "Failed to update user details", error: error.message });
   }
 }
-  // // Final Step: If OTP for new email is verified, update user email
-  // if (newEmail && !otp) {
-  //   const newOtpRecord = await prisma.otp.findUnique({ where: { email: newEmail } });
-  //   if (!newOtpRecord || newOtpRecord.code !== otp || newOtpRecord.expiresAt < new Date()) {
-  //     return res.status(400).json({ message: "Invalid or expired OTP on new email" });
-  //   }
+// // Final Step: If OTP for new email is verified, update user email
+// if (newEmail && !otp) {
+//   const newOtpRecord = await prisma.otp.findUnique({ where: { email: newEmail } });
+//   if (!newOtpRecord || newOtpRecord.code !== otp || newOtpRecord.expiresAt < new Date()) {
+//     return res.status(400).json({ message: "Invalid or expired OTP on new email" });
+//   }
 
-  //   // If OTP is valid, update the email in the user record
-  //   updatedData.email = newEmail;
-  // }
+//   // If OTP is valid, update the email in the user record
+//   updatedData.email = newEmail;
+// }
 
-  // // Update the user record with any other provided details
-  // const updatedUser = await prisma.user.update({
-  //   where: { id: id },
-  //   data: updatedData,
-  // });
+// // Update the user record with any other provided details
+// const updatedUser = await prisma.user.update({
+//   where: { id: id },
+//   data: updatedData,
+// });
 
 //   return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
 // } catch (error: any) {
@@ -782,11 +784,13 @@ export async function getFreeDownload(req: Request, res: Response) {
     }
 
     const userId = req.user.id;
-   const count =  await prisma.user.findUnique({where:{id:userId},
-  select:{
-    freeDownloads:true,
-    profileImg:true
-  }})
+    const count = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        freeDownloads: true,
+        profileImg: true
+      }
+    })
 
     return res.status(200).json({
       downloads: count
@@ -880,7 +884,7 @@ export const resetFreeDownloads = async () => {
 
 
 // Delete user account by ID
-export const deleteUser = async (req:Request, res:Response) => {
+export const deleteUser = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {

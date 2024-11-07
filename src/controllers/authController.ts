@@ -146,13 +146,13 @@ export async function login(req: Request, res: Response) {
           results: {
             message: 'Login successfull.',
             token,
-            data: { id: user.id, email: user.email, role: user.role, name: user.name,image:user.profileImg, freeDownloads:user.freeDownloads, number:user.number }
+            data: { id: user.id, email: user.email, role: user.role, name: user.name, image: user.profileImg, freeDownloads: user.freeDownloads, number: user.number }
           }
         });
       } else {
-        console.log("herer",verificationResponse.status);
-        
-        return res.status(verificationResponse.status).json({message:verificationResponse.message});
+        console.log("herer", verificationResponse.status);
+
+        return res.status(verificationResponse.status).json({ message: verificationResponse.message });
       }
 
 
@@ -341,10 +341,7 @@ export async function resendOtp(req: Request, res: Response) {
 }
 
 export async function checkUser(req: Request, res: Response) {
-
   try {
-
-
     // Confirm if user information is populated in the request object
     if (!req.user || !req.user.id) {
       console.error("User not authenticated or user ID missing");
@@ -361,230 +358,6 @@ export async function checkUser(req: Request, res: Response) {
     return res.status(500).json({ error: error.message });
   }
 }
-
-// export async function getUserDownloads(req: Request, res: Response) {
-//   try {
-//     // Confirm if user information is populated in the request object
-//     if (!req.user || !req.user.id) {
-//       console.error("User not authenticated or user ID missing");
-//       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
-//     }
-
-//     const userId = req.user.id;
-//     const page = parseInt(req.query.page as string) || 1; // Default to page 1
-//     const limit = 6; // Items per page
-//     const offset = (page - 1) * limit;
-
-
-//     // Fetch total count for pagination
-//     const totalCount = await prisma.downloadHistory.count({
-//       where: { userId },
-//     });
-
-//     // Fetch the download history with pagination
-//     const userDownloads = await prisma.downloadHistory.findMany({
-//       where: { userId },
-//       include: {
-//         template: {
-//           select: {
-//             title: true,
-//             price: true,
-//             sliderImages: true,
-//             sourceFiles: true,
-//           },
-//         },
-//       },
-//       skip: offset,
-//       take: limit,
-//     });
-
-//     // Calculate total pages
-//     const totalPages = Math.ceil(totalCount / limit);
-
-//     return res.status(200).json({
-//       downloads: userDownloads,
-//       pagination: {
-//         page,
-//         limit,
-//         totalPages,
-//         totalCount,
-//       },
-//     });
-//   } catch (error: any) {
-//     console.error("Error fetching user downloads:", error);
-//     return res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// }
-
-// working
-
-// export async function getUserDownloads(req: Request, res: Response) {
-//   try {
-//     if (!req.user || !req.user.id) {
-//       console.error("User not authenticated or user ID missing");
-//       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
-//     }
-
-//     const userId = req.user.id;
-//     const page = parseInt(req.query.page as string) || 1; // Default to page 1
-//     const limit = 6; // Items per page
-//     const offset = (page - 1) * limit;
-//     const sort = req.query.sort as string; // Sort parameter from query
-//     let dateFilter: Date | undefined;
-
-//     // Calculate the date filter based on the selected sort option
-//     const currentDate = new Date();
-//     switch (sort) {
-//       case 'Last Day':
-//         dateFilter = new Date(currentDate);
-//         dateFilter.setDate(currentDate.getDate() - 1);
-//         break;
-//       case 'Last 7 Day':
-//         dateFilter = new Date(currentDate);
-//         dateFilter.setDate(currentDate.getDate() - 7);
-//         break;
-//       case 'Last 30 Day':
-//         dateFilter = new Date(currentDate);
-//         dateFilter.setDate(currentDate.getDate() - 30);
-//         break;
-//       case 'Last Quarter':
-//         dateFilter = new Date(currentDate);
-//         dateFilter.setMonth(currentDate.getMonth() - 3);
-//         break;
-//       case 'Last Year':
-//         dateFilter = new Date(currentDate);
-//         dateFilter.setFullYear(currentDate.getFullYear() - 1);
-//         break;
-//       default:
-//         dateFilter = undefined; // No filter applied if no sort matches
-//     }
-
-//     // Log for debugging
-//     console.log("Date filter applied:", dateFilter);
-
-//     // Count total downloads based on date filter
-//     const totalCount = await prisma.downloadHistory.count({
-//       where: {
-//         userId,
-//         ...(dateFilter && { downloadedAt: { gte: dateFilter } }), // Apply date filter if present
-//       },
-//     });
-
-//     // Fetch downloads based on date filter and pagination
-//     const userDownloads = await prisma.downloadHistory.findMany({
-//       where: {
-//         userId,
-//         ...(dateFilter && { downloadedAt: { gte: dateFilter } }), // Apply date filter if present
-//       },
-//       include: {
-//         template: {
-//           select: {
-//             title: true,
-//             price: true,
-//             sliderImages: true,
-//             sourceFiles: true,
-
-//           },
-//         },
-//       },
-//       skip: offset,
-//       take: limit,
-//     });
-
-//     // Calculate total pages
-//     const totalPages = Math.ceil(totalCount / limit);
-
-//     return res.status(200).json({
-//       downloads: userDownloads,
-//       pagination: {
-//         page,
-//         limit,
-//         totalPages,
-//         totalCount,
-//       },
-//     });
-//   } catch (error: any) {
-//     console.error("Error fetching user downloads:", error);
-//     return res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// }
-
-
-// Assuming this is your Prisma client instance
-
-// export async function getUserDownloads(req: Request, res: Response) {
-//   try {
-//     if (!req.user || !req.user.id) {
-//       console.error("User not authenticated or user ID missing");
-//       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
-//     }
-
-//     const userId = req.user.id;
-//     const page = parseInt(req.query.page as string) || 1;
-//     const limit = 6;
-//     const offset = (page - 1) * limit;
-//     const selectedSort = req.query.sort as string || 'Last Day';
-//     const selectedCategory = req.query.category as string || 'All';
-
-//     // Determine the date range filter based on selectedSort
-//     let dateFilter = {};
-//     const today = new Date();
-//     if (selectedSort === 'Last Day') {
-//       dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 1)) } };
-//     } else if (selectedSort === 'Last 7 Day') {
-//       dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 7)) } };
-//     } else if (selectedSort === 'Last 30 Day') {
-//       dateFilter = { downloadedAt: { gte: new Date(today.setDate(today.getDate() - 30)) } };
-//     } else if (selectedSort === 'Last Quarter') {
-//       dateFilter = { downloadedAt: { gte: new Date(today.setMonth(today.getMonth() - 3)) } };
-//     } else if (selectedSort === 'Last Year') {
-//       dateFilter = { downloadedAt: { gte: new Date(today.setFullYear(today.getFullYear() - 1)) } };
-//     }
-
-//     // Determine the category filter based on selectedCategory
-//     let categoryFilter = {};
-//     if (selectedCategory === 'Free Download') {
-//       categoryFilter = { template: { price: 0 } };
-//     } else if (selectedCategory === 'Premium') {
-//       categoryFilter = { template: { price: { gt: 0 } } };
-//     }
-
-//     // Combine filters for the query
-//     const filters = { userId, ...dateFilter, ...categoryFilter };
-
-//     const totalCount = await prisma.downloadHistory.count({ where: filters });
-//     const userDownloads = await prisma.downloadHistory.findMany({
-//       where: filters,
-//       include: {
-//         template: {
-//           select: {
-//             title: true,
-//             price: true,
-//             sliderImages: true,
-//             sourceFiles: true,
-//           },
-//         },
-//       },
-//       skip: offset,
-//       take: limit,
-//     });
-
-//     const totalPages = Math.ceil(totalCount / limit);
-
-//     return res.status(200).json({
-//       downloads: userDownloads,
-//       pagination: {
-//         page,
-//         limit,
-//         totalPages,
-//         totalCount,
-//       },
-//     });
-//   } catch (error: any) {
-//     console.error("Error fetching user downloads:", error);
-//     return res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// }
 
 
 // API to update user details with OTP verification for email change
@@ -675,29 +448,7 @@ export async function updateUserDetails(req: Request, res: Response) {
     return res.status(500).json({ message: "Failed to update user details", error: error.message });
   }
 }
-  // // Final Step: If OTP for new email is verified, update user email
-  // if (newEmail && !otp) {
-  //   const newOtpRecord = await prisma.otp.findUnique({ where: { email: newEmail } });
-  //   if (!newOtpRecord || newOtpRecord.code !== otp || newOtpRecord.expiresAt < new Date()) {
-  //     return res.status(400).json({ message: "Invalid or expired OTP on new email" });
-  //   }
 
-  //   // If OTP is valid, update the email in the user record
-  //   updatedData.email = newEmail;
-  // }
-
-  // // Update the user record with any other provided details
-  // const updatedUser = await prisma.user.update({
-  //   where: { id: id },
-  //   data: updatedData,
-  // });
-
-//   return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
-// } catch (error: any) {
-//   console.error("Error updating user details:", error);
-//   return res.status(500).json({ message: "Failed to update user details", error: error.message });
-// }
-// }
 
 export async function getUserDownloads(req: Request, res: Response) {
   try {
@@ -774,6 +525,7 @@ export async function getUserDownloads(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 }
+
 export async function getFreeDownload(req: Request, res: Response) {
   try {
     if (!req.user || !req.user.id) {
@@ -782,11 +534,13 @@ export async function getFreeDownload(req: Request, res: Response) {
     }
 
     const userId = req.user.id;
-   const count =  await prisma.user.findUnique({where:{id:userId},
-  select:{
-    freeDownloads:true,
-    profileImg:true
-  }})
+    const count = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        freeDownloads: true,
+        profileImg: true
+      }
+    })
 
     return res.status(200).json({
       downloads: count
@@ -796,8 +550,6 @@ export async function getFreeDownload(req: Request, res: Response) {
     return res.status(500).json({ message: "Server error", error: error.message });
   }
 }
-
-
 
 export async function updateUserImage(req: Request, res: Response) {
   try {
@@ -812,7 +564,6 @@ export async function updateUserImage(req: Request, res: Response) {
     const profileImageUrl = await uploadFileToFirebase(req.file, 'profileImg');
 
     console.log(profileImageUrl, "=profileImageUrl");
-
 
     // Update the user's profile image in the database
     const updatedUser = await prisma.user.update({
@@ -878,16 +629,26 @@ export const resetFreeDownloads = async () => {
   }
 };
 
-
 // Delete user account by ID
-export const deleteUser = async (req:Request, res:Response) => {
-  const { id } = req.params;
+export const deleteUser = async (req: Request, res: Response) => {
+  const userId = req.user?.id;
 
   try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId
+      }
+    })
+    if (!user) {
+      return res.status(400).json({ message: 'User not exist' });
+    }
+
     // Delete the user and cascade deletion to related records
+
     await prisma.user.delete({
-      where: { id },
-    });
+      where: { id: userId },
+      include: { templates: true, downloadHistory: true }
+    })
 
     return res.status(200).json({ message: 'User account deleted successfully' });
   } catch (error) {

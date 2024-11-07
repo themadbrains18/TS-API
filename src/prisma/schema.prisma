@@ -21,7 +21,7 @@ model User {
   profileImg      String?           @db.VarChar(2048)
   number          String?
   freeDownloads   Int               @default(3)
-  downloadHistory DownloadHistory[]
+  downloadHistory DownloadHistory[] @relation("UserDownloadHistory")
   role            Role              @default(USER)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
@@ -33,6 +33,135 @@ model Otp {
   code      String
   expiresAt DateTime
   email     String   @unique // Ensure this is unique
+}
+
+model Template {
+  id                  String               @id @default(cuid())
+  title               String
+  price               Float                @default(0)
+  description         String?              @db.Text
+  imageUrl            String?
+  version             String?
+  userId              String
+  downloads           Int                  @default(0)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  user                User?                @relation("UserTemplates", fields: [userId], references: [id], onDelete: Cascade)
+
+  industries          IndustryType?        @relation(fields: [industryTypeId], references: [id], onDelete: Cascade)
+  industryTypeId      String?
+
+  templateType        TemplateType?        @relation(fields: [templateTypeId], references: [id], onDelete: Cascade)
+  templateTypeId      String?
+
+  subCategory         SubCategory?         @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  subCategoryId       String?
+
+  softwareType        SoftwareType?        @relation(fields: [softwareTypeId], references: [id], onDelete: Cascade)
+  softwareTypeId      String?
+
+  mobileVersion       Boolean?
+  documentationReady  Boolean?
+
+  credits             Credit[]             @relation("TemplateCredits") 
+  techDetails         Json?
+  sourceFiles         SourceFile[]         @relation("TemplateSourceFiles") 
+  sliderImages        SliderImage[]        @relation("TemplateSliderImages") 
+  previewImages       PreviewImage[]       @relation("TemplatePreviewImages") 
+  previewMobileImages PreviewMobileImage[] @relation("TemplatePreviewMobileImages") 
+
+  seoTags             Json
+  isPaid              Boolean              @default(false)
+  downloadHistory     DownloadHistory[]    @relation("TemplateDownloadHistory")
+
+}
+
+model Credit {
+  id            String   @id @default(cuid())
+  fonts         Json?
+  images        Json?
+  icons         Json?
+  illustrations Json?
+  template      Template @relation("TemplateCredits", fields: [templateId], references: [id], onDelete: Cascade) // Add onDelete here
+  templateId    String
+}
+
+model SourceFile {
+  id         String   @id @default(cuid())
+  fileUrl    String   @db.Text
+  template   Template @relation("TemplateSourceFiles",fields: [templateId], references: [id], onDelete: Cascade)
+  templateId String
+}
+
+model SliderImage {
+  id         String   @id @default(cuid())
+  imageUrl   String   @db.Text
+  template   Template @relation("TemplateSliderImages",fields: [templateId], references: [id], onDelete: Cascade)
+  templateId String
+}
+
+model PreviewImage {
+  id         String   @id @default(cuid())
+  imageUrl   String   @db.Text
+  template   Template @relation("TemplatePreviewImages",fields: [templateId], references: [id], onDelete: Cascade)
+  templateId String
+}
+
+model PreviewMobileImage {
+  id         String   @id @default(cuid())
+  imageUrl   String   @db.Text
+  template   Template @relation("TemplatePreviewMobileImages",fields: [templateId], references: [id], onDelete: Cascade)
+  templateId String
+}
+
+model DownloadHistory {
+  id           String   @id @default(cuid())
+  userId       String?
+  email        String
+  templateId   String
+  downloadedAt DateTime @default(now())
+  
+  user         User?    @relation("UserDownloadHistory",fields: [userId], references: [id], onDelete: Cascade)
+  template     Template @relation("TemplateDownloadHistory",fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([userId, templateId], map: "DownloadHistory_userId_templateId_idx")
+}
+
+
+model TemplateType {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  templates     Template[]
+  subCategories SubCategory[]  @relation("TemplateTypeSubCategories") // One-to-many relationship
+  softwareType  SoftwareType[] @relation("TemplateTypeSoftwareTypes") // One-to-many relationship
+}
+
+model SubCategory {
+  id             String        @id @default(cuid())
+  name           String        @unique
+  templates      Template[]
+  templateType   TemplateType? @relation("TemplateTypeSubCategories", fields: [templateTypeId], references: [id])
+  templateTypeId String?
+}
+
+// model CmsType {
+//   id        String     @id @default(cuid())
+//   name      String     @unique
+//   templates Template[]
+// }
+
+model SoftwareType {
+  id             String        @id @default(cuid())
+  name           String        @unique
+  templates      Template[] // Relationship to Template
+  templateType   TemplateType? @relation("TemplateTypeSoftwareTypes", fields: [templateTypeId], references: [id])
+  templateTypeId String? // Optional relation to TemplateType
+}
+
+model IndustryType {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  templates Template[]
 }
 
 // model Template {
@@ -131,131 +260,3 @@ model Otp {
 //   template   Template @relation(fields: [templateId], references: [id])
 //   templateId String
 // }
-model Template {
-  id                  String               @id @default(cuid())
-  title               String
-  price               Float                @default(0)
-  description         String?              @db.Text
-  imageUrl            String?
-  version             String?
-  userId              String
-  downloads           Int                  @default(0)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  user                User?                @relation("UserTemplates", fields: [userId], references: [id], onDelete: Cascade)
-
-  industries          IndustryType?        @relation(fields: [industryTypeId], references: [id], onDelete: Cascade)
-  industryTypeId      String?
-
-  templateType        TemplateType?        @relation(fields: [templateTypeId], references: [id], onDelete: Cascade)
-  templateTypeId      String?
-
-  subCategory         SubCategory?         @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
-  subCategoryId       String?
-
-  softwareType        SoftwareType?        @relation(fields: [softwareTypeId], references: [id], onDelete: Cascade)
-  softwareTypeId      String?
-
-  mobileVersion       Boolean?
-  documentationReady  Boolean?
-
-  credits             Credit[]             @relation("TemplateCredits") 
-  techDetails         Json?
-  sourceFiles         SourceFile[]         @relation("TemplateSourceFiles") 
-  sliderImages        SliderImage[]        @relation("TemplateSliderImages") 
-  previewImages       PreviewImage[]       @relation("TemplatePreviewImages") 
-  previewMobileImages PreviewMobileImage[] @relation("TemplatePreviewMobileImages") 
-
-  seoTags             Json
-  isPaid              Boolean              @default(false)
-  downloadHistory     DownloadHistory[]    @relation("TemplateDownloadHistory")
-
-}
-
-model Credit {
-  id            String   @id @default(cuid())
-  fonts         Json?
-  images        Json?
-  icons         Json?
-  illustrations Json?
-  template      Template @relation("TemplateCredits", fields: [templateId], references: [id], onDelete: Cascade) // Add onDelete here
-  templateId    String
-}
-
-model SourceFile {
-  id         String   @id @default(cuid())
-  fileUrl    String   @db.Text
-  template   Template @relation("TemplateSourceFiles",fields: [templateId], references: [id], onDelete: Cascade)
-  templateId String
-}
-
-model SliderImage {
-  id         String   @id @default(cuid())
-  imageUrl   String   @db.Text
-  template   Template @relation("TemplateSliderImages",fields: [templateId], references: [id], onDelete: Cascade)
-  templateId String
-}
-
-model PreviewImage {
-  id         String   @id @default(cuid())
-  imageUrl   String   @db.Text
-  template   Template @relation("TemplatePreviewImages",fields: [templateId], references: [id], onDelete: Cascade)
-  templateId String
-}
-
-model PreviewMobileImage {
-  id         String   @id @default(cuid())
-  imageUrl   String   @db.Text
-  template   Template @relation("TemplatePreviewMobileImages",fields: [templateId], references: [id], onDelete: Cascade)
-  templateId String
-}
-
-model DownloadHistory {
-  id           String   @id @default(cuid())
-  userId       String?
-  email        String
-  templateId   String
-  downloadedAt DateTime @default(now())
-  
-  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template     Template @relation("TemplateDownloadHistory",fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@index([userId, templateId], map: "DownloadHistory_userId_templateId_idx")
-}
-
-
-model TemplateType {
-  id            String         @id @default(cuid())
-  name          String         @unique
-  templates     Template[]
-  subCategories SubCategory[]  @relation("TemplateTypeSubCategories") // One-to-many relationship
-  softwareType  SoftwareType[] @relation("TemplateTypeSoftwareTypes") // One-to-many relationship
-}
-
-model SubCategory {
-  id             String        @id @default(cuid())
-  name           String        @unique
-  templates      Template[]
-  templateType   TemplateType? @relation("TemplateTypeSubCategories", fields: [templateTypeId], references: [id])
-  templateTypeId String?
-}
-
-// model CmsType {
-//   id        String     @id @default(cuid())
-//   name      String     @unique
-//   templates Template[]
-// }
-
-model SoftwareType {
-  id             String        @id @default(cuid())
-  name           String        @unique
-  templates      Template[] // Relationship to Template
-  templateType   TemplateType? @relation("TemplateTypeSoftwareTypes", fields: [templateTypeId], references: [id])
-  templateTypeId String? // Optional relation to TemplateType
-}
-
-model IndustryType {
-  id        String     @id @default(cuid())
-  name      String     @unique
-  templates Template[]
-}

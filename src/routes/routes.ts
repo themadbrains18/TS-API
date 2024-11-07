@@ -28,7 +28,7 @@ router.post('/reset-password', resetPasswordWithOtp);
 router.get('/get-user', authenticateToken, checkUser);
 router.get('/get-user-downloads', authenticateToken, getUserDownloads);
 router.put('/update-details',authenticateToken, updateUserDetails);
-router.delete('/delete-account/:id', deleteUser);
+router.delete('/delete-account',authenticateToken, deleteUser);
 router.get('/free-download', authenticateToken, getFreeDownload)
 
 router.put('/user/update-image', authenticateToken, uploadSingleImageFile, multerErrorHandler, updateUserImage);

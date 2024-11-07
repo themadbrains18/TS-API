@@ -2,7 +2,22 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-// Interface for Firebase config to ensure proper typing
+/*
+ * Interface for Firebase configuration to ensure proper typing.
+ * 
+ * This interface defines the structure and required fields for the Firebase configuration object.
+ * It ensures that the object passed to initialize Firebase has all the necessary properties and types.
+ * The fields include:
+ * - apiKey: The API key for Firebase authentication.
+ * - authDomain: The authentication domain for Firebase.
+ * - projectId: The unique project identifier for Firebase.
+ * - storageBucket: The storage bucket URL for Firebase storage.
+ * - messagingSenderId: The sender ID for Firebase Cloud Messaging.
+ * - appId: The app identifier for Firebase.
+ * - measurementId: The measurement ID for Firebase analytics.
+ * 
+ * This interface helps with TypeScript type safety and improves code clarity.
+ */
 interface FirebaseConfig {
     apiKey: string;
     authDomain: string;
@@ -13,7 +28,14 @@ interface FirebaseConfig {
     measurementId: string;
 }
 
-// Function to safely load Firebase config
+/*
+ * Function to safely load Firebase configuration from environment variables.
+ * 
+ * This function retrieves the Firebase configuration from the environment variables
+ * (e.g., API_KEY, AUTH_DOMAIN, etc.) and ensures that all required fields are present.
+ * 
+ * @returns An object with the correct structure for Firebase configuration (FirebaseConfig interface).
+ */
 const getFirebaseConfig = (): FirebaseConfig => {
     const {
         API_KEY,
@@ -41,7 +63,9 @@ const getFirebaseConfig = (): FirebaseConfig => {
     };
 };
 
-// Export the Firebase config object
+/**
+ * Export the Firebase config object
+ */
 export default {
     firebaseConfig: getFirebaseConfig(),
 };

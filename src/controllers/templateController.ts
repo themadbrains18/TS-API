@@ -13,7 +13,20 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-// Create a new template
+/**
+ * Creates a new template in the system.
+ * 
+ * @param {AuthenticatedRequest} req - The request object containing the template data in the body, including title, description, credits, tech details, and various other fields.
+ * @param {Response} res - The response object used to return a success message or an error message.
+ * @returns {Promise<Response>} - A response indicating the success or failure of the template creation.
+ * 
+ * - This function processes incoming template creation requests by validating the required fields, including title, SEO tags, credits, and tech details.
+ * - Files such as slider images, preview images, mobile preview images, and source files are uploaded to Firebase using a helper function.
+ * - If any required fields are missing or invalid, a `400 Bad Request` status is returned with an error message.
+ * - The `template` is created in the database using Prisma's `create` method, along with related data (credits, images, files).
+ * - If the creation is successful, a `201 Created` status is returned with the newly created template data.
+ * - In case of any errors, including validation errors or database issues, a `500 Internal Server Error` status is returned with an appropriate error message.
+ */
 export async function createTemplate(req: AuthenticatedRequest, res: Response) {
   try {
     // Parse and validate request data using DTO schema
@@ -116,7 +129,20 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
   }
 }
 
-// Delete a template and its associated files
+
+/**
+ * Deletes a template and its associated files from the database.
+ * 
+ * @param {AuthenticatedRequest} req - The request object containing the template ID in the parameters.
+ * @param {Response} res - The response object used to return a success or error message.
+ * @returns {Promise<Response>} - A response indicating the success or failure of the template deletion.
+ * 
+ * - This function deletes a template and all related records (credits, images, source files, and download history) from the database.
+ * - It first checks if the template exists using the provided `id`. If not, a `404 Not Found` status is returned with a message indicating the template doesn't exist.
+ * - A Prisma transaction is used to delete all related records across multiple models, ensuring that the process is atomic (either all records are deleted or none).
+ * - If successful, a `200 OK` status is returned along with a message confirming the deletion.
+ * - In case of any errors during the deletion process, a `500 Internal Server Error` status is returned with an error message.
+ */
 export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
 // console.log(id,"==id");
@@ -125,17 +151,7 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
     const template = await prisma.template.findUnique({ where: { id } });
     if (!template) return res.status(404).json({ message: 'Template not found.' });
 
-    // Delete files from Firebase
-    // const imageUrls = template.imageUrl?.split(',') || [];
-    // await Promise.all(imageUrls.map(url => deleteFileFromFirebase(url)));
-
-    // Delete associated images and files
-    // await Promise.all([
-    //   // prisma.sliderImage.deleteMany({ where: { templateId: JSON.stringify(id) } }),
-    //   // prisma.previewImage.deleteMany({ where: { templateId: JSON.stringify(id) } }),
-    //   // prisma.previewMobileImage.deleteMany({ where: { templateId: JSON.stringify(id) } }),
-    //   // prisma.sourceFile.deleteMany({ where: { templateId: JSON.stringify(id) } }),
-    // ]);
+  
     await prisma.$transaction([
       // Delete related records in other models
       prisma.credit.deleteMany({ where: { templateId: id } }),
@@ -159,7 +175,24 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
   }
 }
 
-// Get templates with filters and pagination
+
+
+/**
+ * Fetches templates with optional filters, pagination, and sorting.
+ * 
+ * @param {Request} req - The request object containing query parameters for filtering, pagination, and sorting.
+ * @param {Response} res - The response object used to return the fetched templates and pagination details.
+ * @returns {Promise<Response>} - A response containing the fetched templates and pagination metadata.
+ * 
+ * - This function allows you to fetch templates based on multiple filters such as industry type, template type, software type, price ranges, and search terms.
+ * - The filters support both single values (like a `subCatId`) and arrays (like `industryTypeIds`, `templateTypeId`, etc.), with support for multiple values provided as comma-separated strings.
+ * - Pagination is handled through `page` and `limit` query parameters, where `page` determines the current page number and `limit` specifies the number of templates per page.
+ * - The `sortBy` query parameter allows sorting the results by "Newest releases", "Most popular", or "Best Seller", with the default being sorted by creation date.
+ * - The function uses Prisma to query the database for templates, joining relevant data from related models like `credits`, `sliderImages`, `sourceFiles`, and others.
+ * - It calculates the total number of templates matching the filters and returns the data along with pagination information, including the total number of templates, total pages, current page, and limit per page.
+ * - If the query is successful, a `200 OK` status is returned with the data. If an error occurs, a `500 Internal Server Error` status is returned with an error message.
+ */
+
 export async function getTemplates(req: Request, res: Response) {
 
   try {
@@ -309,7 +342,19 @@ export async function getTemplates(req: Request, res: Response) {
 
 
 
-// Fetch Latest Templates
+/**
+ * Fetches the latest templates from the database.
+ * 
+ * @param {Request} req - The request object, used to handle incoming HTTP requests.
+ * @param {Response} res - The response object, used to send back the response to the client.
+ * @returns {Promise<Response>} - A response containing the latest templates and a success message.
+ * 
+ * - This function retrieves the most recently created templates from the database using Prisma's `findMany` method.
+ * - The templates are selected with specific fields: `title`, `version`, `price`, `templateType`, and `id`.
+ * - The templates are ordered by the `createdAt` field in descending order, ensuring the most recent templates are returned first.
+ * - If the query is successful, a `200 OK` response is returned with the fetched templates and a success message.
+ * - If an error occurs while fetching the templates, a `500 Internal Server Error` response is returned with an error message.
+ */
 export const getAllTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
@@ -338,7 +383,20 @@ export const getAllTemplates = async (req: Request, res: Response) => {
 
 
 
-// Fetch Latest Templates
+/**
+ * Fetches the latest featured templates from the database.
+ * 
+ * @param {Request} req - The request object, used to handle incoming HTTP requests.
+ * @param {Response} res - The response object, used to send back the response to the client.
+ * @returns {Promise<Response>} - A response containing the featured templates and a success message.
+ * 
+ * - This function retrieves the most recently created featured templates from the database using Prisma's `findMany` method.
+ * - It selects specific fields for each template: `sliderImages`, `title`, `version`, `price`, `templateType`, `id`, and `softwareType`.
+ * - The templates are ordered by the `createdAt` field in descending order to fetch the latest templates first.
+ * - The `take` clause limits the result to only 6 templates to showcase featured ones.
+ * - If the query is successful, a `200 OK` response is returned with the fetched featured templates and a success message.
+ * - If an error occurs while fetching the templates, a `500 Internal Server Error` response is returned with an error message.
+ */
 export const featureTemplates = async (req: Request, res: Response) => {
   try {
     console.log("here");
@@ -366,6 +424,21 @@ export const featureTemplates = async (req: Request, res: Response) => {
   }
 };
 
+
+/**
+ * Fetches the latest templates from the database.
+ * 
+ * @param {Request} req - The request object, representing the incoming HTTP request.
+ * @param {Response} res - The response object, used to send back the response to the client.
+ * @returns {Promise<Response>} - A response containing the latest templates or an error message.
+ * 
+ * - This function retrieves the most recently created templates from the database using Prisma's `findMany` method.
+ * - The templates are ordered by the `createdAt` field in descending order to get the latest templates first.
+ * - The `take` clause limits the results to 10 templates.
+ * - The `include` clause fetches additional related data for each template, including `credits`, `sliderImages`, `previewImages`, `sourceFiles`, and `previewMobileImages`.
+ * - If the query is successful, the function returns a `200 OK` response with the fetched templates in the `templates` property.
+ * - In case of an error, the function logs the error and returns a `500 Internal Server Error` response with a message indicating failure.
+ */
 export const getLatestTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
@@ -390,6 +463,24 @@ export const getLatestTemplates = async (req: Request, res: Response) => {
 };
 
 
+
+
+/**
+ * Handles the download process for a template, including tracking downloads for both logged-in and unregistered users.
+ * 
+ * @param {Request} req - The request object, containing the template ID in the parameters and user data (userId, email, url) in the body.
+ * @param {Response} res - The response object, used to send the success or error response.
+ * @returns {Promise<Response>} - A response indicating whether the download was successfully recorded or an error occurred.
+ * 
+ * - This function processes template downloads and ensures that download limits are respected for both registered and unregistered users.
+ * - If the user is logged in (with a valid `userId`), it checks if they have free downloads left and decrements the count accordingly.
+ * - For unregistered users, the function tracks the number of downloads by email and limits the downloads to 3 per email.
+ * - An email notification is sent to the user or email address when a download occurs.
+ * - The template's download count is incremented in the database.
+ * - A record of the download is created in the `downloadHistory` table, which includes information about the template, the user (if logged in), or the email (for unregistered users).
+ * - If the user has reached the download limit or other conditions are not met, an appropriate error message is returned.
+ * - In case of an error, a `500 Internal Server Error` response is returned with the error message.
+ */
 export const templateDownloads = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { userId, email, url } = req.body; // Expecting `userId` for logged-in users and `email` for unregistered users
@@ -454,7 +545,21 @@ export const templateDownloads = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to record download', error });
   }
 };
-// Fetch Popular Templates
+
+
+/**
+ * Fetches the most popular templates based on the number of downloads.
+ * 
+ * @param {Request} req - The request object, which may contain query parameters (though not used in this function).
+ * @param {Response} res - The response object, used to send the fetched templates or an error message.
+ * @returns {Promise<Response>} - A response containing the list of popular templates or an error message.
+ * 
+ * - This function queries the database for templates and orders them by the highest number of downloads, ensuring that the most popular templates are retrieved first.
+ * - The function fetches up to 10 templates (limit defined by the `take` parameter).
+ * - The templates include associated data such as credits, slider images, preview images, source files, and preview mobile images.
+ * - The response returns a JSON object containing the `templates` array with the popular templates.
+ * - If an error occurs during the database query, a `500 Internal Server Error` response is returned with the error message.
+ */
 export const getPopularTemplates = async (req: Request, res: Response) => {
   try {
     const popularTemplates = await prisma.template.findMany({
@@ -479,7 +584,20 @@ export const getPopularTemplates = async (req: Request, res: Response) => {
 };
 
 
-// Get all templates by userID
+
+
+/**
+ * Fetches all templates associated with a specific user by their userID.
+ * 
+ * @param {Request} req - The request object, which contains the `id` parameter (user ID) or `user` object.
+ * @param {Response} res - The response object used to return the templates or an error message.
+ * @returns {Promise<Response>} - A response containing the templates associated with the user ID or an error message.
+ * 
+ * - This function retrieves all templates that are associated with a specific user, identified by the `id` parameter in the URL or the `user` object in the request.
+ * - The function queries the `template` table, filtering by the `userId` field, and includes related data, such as template type, software type, industries, credits, slider images, preview images, preview mobile images, and source files.
+ * - The response returns a JSON object with the `results` field containing the fetched templates.
+ * - If an error occurs during the query execution, the function will return a `500 Internal Server Error` response with an error message.
+ */
 export async function getAllTemplatesByUserId(req: Request, res: Response) {
   try {
 
@@ -509,7 +627,18 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
 }
 
 
-// Get a single template by ID
+/**
+ * Fetches a single template by its ID.
+ * 
+ * @param {Request} req - The request object, containing the `id` parameter which is the template's unique identifier.
+ * @param {Response} res - The response object used to return the template or an error message.
+ * @returns {Promise<Response>} - A response containing the fetched template or an error message.
+ * 
+ * - This function retrieves a single template from the database by its unique `id` provided in the request parameters.
+ * - The function queries the `template` table using `findUnique` and includes related data such as credits, images (slider, preview, mobile), source files, software type, and user details (user name and ID).
+ * - If the template with the specified `id` is not found, the function returns a `404 Not Found` response with an appropriate message.
+ * - In case of an error during the database query, a `500 Internal Server Error` response is returned, along with the error message.
+ */
 export async function getTemplateById(req: Request, res: Response) {
   const { id } = req.params;
 
@@ -542,12 +671,27 @@ export async function getTemplateById(req: Request, res: Response) {
     return res.status(500).json({ message: 'Failed to fetch template', error: error.message });
   }
 }
-// Get a single template by title
+
+
+
+/**
+ * Fetches templates based on a search query and optional subcategory filter.
+ * 
+ * @param {Request} req - The request object, which may contain the query parameter (`query`) for the template title and 
+ *                         the optional `subCategoryId` query parameter to filter by subcategory.
+ * @param {Response} res - The response object used to return the search results or an error message.
+ * @returns {Promise<Response>} - A response containing a list of templates that match the search criteria or an error message.
+ * 
+ * - The function extracts the `query` (search keyword) and `subCategoryId` (optional filter) from the request query parameters.
+ * - If the `query` is not provided or is empty, the function immediately returns an empty array of templates (200 OK).
+ * - If a `query` is provided, the function searches for templates in the database whose title contains the search keyword (case-insensitive).
+ * - If a `subCategoryId` is provided, the function applies this filter to narrow down the search to a specific subcategory.
+ * - The results include the template's `id`, `title`, `description`, `imageUrl`, and `price`.
+ * - In case of an error during the search, the function logs the error and returns a `500 Internal Server Error` response with a generic error message.
+ */
 export async function getTemplateByTitle(req: Request, res: Response) {
   const query = typeof req.query.query === 'string' ? req.query.query : undefined;
   const subCategoryId = typeof req.query.subCategoryId === 'string' ? req.query.subCategoryId : undefined;
-
-  // console.log(subCategoryId, "==jhkjhkjh", query);
 
   // Early return if query is empty
   if (!query) {
@@ -580,6 +724,27 @@ export async function getTemplateByTitle(req: Request, res: Response) {
 
 
 
+/**
+ * Updates the details of a template, including its credits and associated files.
+ * This operation ensures that only the owner of the template can update it and that 
+ * the changes are applied atomically through a database transaction.
+ * 
+ * @param {AuthenticatedRequest} req - The authenticated request object, which includes
+ *                                     the template ID in the route parameters (`id`),
+ *                                     user information (`req.user`), and any update data in the request body.
+ * @param {Response} res - The response object used to send back a success or error message.
+ * @returns {Promise<Response>} - A response with the result of the update operation or an error message.
+ * 
+ * Steps:
+ * 1. Parses the credits data from the request body (expected as a JSON string).
+ * 2. Retrieves the existing template and associated entities from the database.
+ * 3. Verifies that the authenticated user is the owner of the template, preventing unauthorized updates.
+ * 4. Updates the template with the provided data, including title, description, price, industry, and credits.
+ * 5. If new files (slider images, preview images, source files) are uploaded, they are processed and saved to Firebase, and their URLs are stored in the database.
+ * 6. The related images and files are deleted and recreated to reflect the newly uploaded versions.
+ * 7. If the update is successful, returns a success response with the updated template data.
+ * 8. In case of an error (e.g., template not found, unauthorized user), logs the error and returns a 500 status with an error message.
+ */
 
 export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;

@@ -225,6 +225,9 @@ export async function forgetPassword(req: Request, res: Response) {
 export async function resetPasswordWithOtp(req: Request, res: Response) {
   const { email, otp, newPassword, confirmPassword }: { email: string; otp: string; newPassword: string; confirmPassword: string } = req.body;
 
+  // console.log(email, otp, newPassword, confirmPassword , "email, otp, newPassword, confirmPassword")
+
+
   if (!email || !otp) {
     return res.status(400).json({ message: 'All fields are required' });
   }

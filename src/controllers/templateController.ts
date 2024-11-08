@@ -547,6 +547,7 @@ export const templateDownloads = async (req: Request, res: Response) => {
 };
 
 
+
 /**
  * Fetches the most popular templates based on the number of downloads.
  * 
@@ -560,6 +561,7 @@ export const templateDownloads = async (req: Request, res: Response) => {
  * - The response returns a JSON object containing the `templates` array with the popular templates.
  * - If an error occurs during the database query, a `500 Internal Server Error` response is returned with the error message.
  */
+
 export const getPopularTemplates = async (req: Request, res: Response) => {
   try {
     const popularTemplates = await prisma.template.findMany({

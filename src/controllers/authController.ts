@@ -29,7 +29,7 @@ function generateToken(userId: string): string {
  * To use a truly random OTP, uncomment the `crypto.randomInt` line.
  */
 function generateOtp(): string {
-  return crypto.randomInt(100000, 999999).toString();
+  // return crypto.randomInt(100000, 999999).toString();
   return '123456';
 }
 
@@ -69,7 +69,7 @@ async function comparePassword(enteredPassword: string, storedPassword: string):
 }
 
 
-/**
+/** 
  * Handles user registration.
  * 
  * @param {Request} req - The request object, expected to contain `name`, `email`, `password`, `confirmPassword`, and optionally `otp` in the body.
@@ -77,6 +77,7 @@ async function comparePassword(enteredPassword: string, storedPassword: string):
  * @returns {Promise<Response>} - Sends a response with status and message about registration.
  * 
  */
+
 export async function register(req: Request, res: Response) {
   const { name, email, password, confirmPassword, otp } = req.body;
 
@@ -398,11 +399,11 @@ export async function resendOtp(req: Request, res: Response) {
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
+    // const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
-      return res.status(400).json({ message: 'User with this email does not exist' });
-    }
+    // if (!user) {
+    //   return res.status(400).json({ message: 'User with this email does not exist' });
+    // }
 
     const otpCode = generateOtp();
     const expiresAt = otpExpiryTime();

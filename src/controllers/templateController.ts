@@ -77,6 +77,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
       }
     }
+console.log(softwareTypeId,"==softwareTypeId");
 
     // Create a new template
     const newTemplate = await prisma.template.create({
@@ -85,7 +86,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         description,
         industryTypeId: industry,
         templateTypeId,
-        softwareTypeId,
+        softwareTypeId : softwareTypeId===""?null: softwareTypeId,
         subCategoryId,
         version,
         price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
@@ -305,7 +306,8 @@ export async function getTemplates(req: Request, res: Response) {
           user: {
             select: {
               name: true,
-              id: true
+              id: true,
+              profileImg:true
             },
           },
         },
@@ -409,7 +411,14 @@ export const featureTemplates = async (req: Request, res: Response) => {
         price: true,
         templateType: true,
         id: true,
-        softwareType:true
+        softwareType:true,
+        user:{
+          select:{
+            id:true,
+            name:true,
+            profileImg:true
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc',
@@ -793,7 +802,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
           description,
           industryTypeId: industry,
           templateTypeId,
-          softwareTypeId,
+          softwareTypeId: (softwareTypeId ==="" || softwareTypeId =="null")?null:softwareTypeId,
           version,
           price: (price !== "undefined" && isPaid === "true") ? Number(price) : 0,
           isPaid: isPaid === "true",

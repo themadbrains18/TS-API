@@ -524,6 +524,11 @@ export async function updateUserDetails(req: Request, res: Response) {
     // OTP verified on current email; respond to the user that they can proceed to update the new email
     if (newEmail && !otp) {
       // Send OTP to new email if provided without OTP
+
+      const userExists = await prisma.user.findUnique({ where: { email: newEmail } });
+      if (userExists) {
+        return res.status(404).json({ message: "This email already exist" });
+      }
       const newOtpCode = generateOtp();
       const newExpiresAt = otpExpiryTime();
       await prisma.otp.upsert({

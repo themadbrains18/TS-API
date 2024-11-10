@@ -29,7 +29,7 @@ function generateToken(userId: string): string {
  * To use a truly random OTP, uncomment the `crypto.randomInt` line.
  */
 function generateOtp(): string {
-  return crypto.randomInt(100000, 999999).toString();
+  // return crypto.randomInt(100000, 999999).toString();
   return '123456';
 }
 
@@ -98,8 +98,10 @@ export async function register(req: Request, res: Response) {
       const otpCode = generateOtp();
       const expiresAt = otpExpiryTime();
 
-      await prisma.otp.create({
-        data: { email: email, code: otpCode, expiresAt },
+      await prisma.otp.upsert({
+        where: { email: email },
+        update: { code: otpCode, expiresAt },
+        create: { email: email, code: otpCode, expiresAt },
       });
 
       await sendOtpEmail(email, otpCode);

@@ -28,6 +28,6 @@ app.use(express.json());
  * Use the router for handling requests at the /api path
  * The routes are defined in the 'routes/routes.ts' file
  */
-app.use('/api', router);
+app.use('/apits', router);
 
 export default app;

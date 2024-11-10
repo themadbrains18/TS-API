@@ -84,4 +84,4 @@ jobs:
 
     - name: Deploy to AWS
       run: |
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.201.86.238 'cd /var/www/api/TS-API && npm install && npm run build && pm2 restart all' || exit 1
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.201.86.238 'cd /var/www/api/TS-API && npm install &&  pm2 restart all' || exit 1

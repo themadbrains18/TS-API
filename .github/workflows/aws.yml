@@ -30,8 +30,8 @@ jobs:
     - name: Install dependencies using Bun
       run: bun install
 
-    - name: Build the project using Bun
-      run: bun run build
+    # - name: Build the project using Bun
+    #   run: bun run build
 
     - name: Set up SSH
       run: |

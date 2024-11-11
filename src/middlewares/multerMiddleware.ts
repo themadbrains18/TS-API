@@ -75,7 +75,7 @@ export const uploadFiles = upload.fields([
 const uploadSingleImage = multer({
   storage,
   limits: {
-    fileSize: 2 * 1024 * 1024, // 2MB limit for single images
+    fileSize: 10 * 1024 * 1024, // 2MB limit for single images
   },
   fileFilter: (req, file, cb) => {
     const allowedImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];

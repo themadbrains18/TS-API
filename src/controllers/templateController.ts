@@ -766,33 +766,64 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
 
   try {
     // Start a transaction to ensure all updates are atomic
+    // Retrieve the existing template with all related entities
+    const existingTemplate = await prisma.template.findUnique({
+      where: { id },
+      include: {
+        sliderImages: true,
+        previewImages: true,
+        previewMobileImages: true,
+        sourceFiles: true,
+        credits: true,
+      },
+    });
+
+    if (!existingTemplate) {
+      throw new Error('Template not found.');
+    }
+
+    // Check user ownership
+    if (existingTemplate.userId !== req.user?.id) {
+      throw new Error('You are not authorized to update this template.');
+    }
+
+    const {
+      title, price, description, industry, templateTypeId,
+      softwareTypeId, version, isPaid, seoTags, techDetails
+    } = req.body;
+        // Function to handle file uploads
+        const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
+          return Promise.all(files.map(file => uploadFileToFirebase(file, folder)));
+        };
+  
+        // Arrays to store the uploaded URLs
+        let sliderImageUrls: string[] = [];
+        let previewImageUrls: string[] = [];
+        let previewMobileImageUrls: string[] = [];
+        let sourceFileUrls: string[] = [];
+  
+        console.log(req.files,"=req.files");
+        
+        // Check if req.files is an array or an object with named fields
+        if (Array.isArray(req.files)) {
+          console.log("Files uploaded without named fields");
+        } else if (req.files) {
+          if (req.files.sliderImages) {
+            sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
+          }
+          if (req.files.previewImages) {
+            previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
+          }
+          if (req.files.previewMobileImages) {
+            previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
+          }
+          if (req.files.sourceFiles) {
+            sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
+          }
+        }
+  
     const result = await prisma.$transaction(async (prisma) => {
       
-      // Retrieve the existing template with all related entities
-      const existingTemplate = await prisma.template.findUnique({
-        where: { id },
-        include: {
-          sliderImages: true,
-          previewImages: true,
-          previewMobileImages: true,
-          sourceFiles: true,
-          credits: true,
-        },
-      });
-
-      if (!existingTemplate) {
-        throw new Error('Template not found.');
-      }
-
-      // Check user ownership
-      if (existingTemplate.userId !== req.user?.id) {
-        throw new Error('You are not authorized to update this template.');
-      }
-
-      const {
-        title, price, description, industry, templateTypeId,
-        softwareTypeId, version, isPaid, seoTags, techDetails
-      } = req.body;
 
       // Update the template details
       const updatedTemplate = await prisma.template.update({
@@ -825,55 +856,25 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
         include: { credits: true },
       });
 
-      // Function to handle file uploads
-      const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
-        return Promise.all(files.map(file => uploadFileToFirebase(file, folder)));
-      };
-
-      // Arrays to store the uploaded URLs
-      let sliderImageUrls: string[] = [];
-      let previewImageUrls: string[] = [];
-      let previewMobileImageUrls: string[] = [];
-      let sourceFileUrls: string[] = [];
-
-      console.log(req.files,"=req.files");
-      
-      // Check if req.files is an array or an object with named fields
-      if (Array.isArray(req.files)) {
-        console.log("Files uploaded without named fields");
-      } else if (req.files) {
-        if (req.files.sliderImages) {
-          sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
-        }
-        if (req.files.previewImages) {
-          previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
-        }
-        if (req.files.previewMobileImages) {
-          previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
-        }
-        if (req.files.sourceFiles) {
-          sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
-        }
-      }
-
+  
       // Conditionally delete and recreate images if new ones are uploaded
       if (sliderImageUrls.length) {
-        await prisma.sliderImage.deleteMany({ where: { templateId: id } });
+        // await prisma.sliderImage.deleteMany({ where: { templateId: id } });
         await Promise.all(sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: id } })));
       }
 
       if (previewImageUrls.length) {
-        await prisma.previewImage.deleteMany({ where: { templateId: id } });
+        // await prisma.previewImage.deleteMany({ where: { templateId: id } });
         await Promise.all(previewImageUrls.map(url => prisma.previewImage.create({ data: { imageUrl: url, templateId: id } })));
       }
 
       if (previewMobileImageUrls.length) {
-        await prisma.previewMobileImage.deleteMany({ where: { templateId: id } });
+        // await prisma.previewMobileImage.deleteMany({ where: { templateId: id } });
         await Promise.all(previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: id } })));
       }
 
       if (sourceFileUrls.length) {
-        await prisma.sourceFile.deleteMany({ where: { templateId: id } });
+        // await prisma.sourceFile.deleteMany({ where: { templateId: id } });
         await Promise.all(sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: id } })));
       }
 

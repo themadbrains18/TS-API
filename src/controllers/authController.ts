@@ -42,7 +42,7 @@ function generateOtp(): string {
  */
 function otpExpiryTime(): Date {
   const now = new Date();
-  now.setMinutes(now.getMinutes() + 10);
+  now.setMinutes(now.getMinutes() + 3);
   return now;
 }
 
@@ -99,8 +99,10 @@ export async function register(req: Request, res: Response) {
       const otpCode = generateOtp();
       const expiresAt = otpExpiryTime();
 
-      await prisma.otp.create({
-        data: { email: email, code: otpCode, expiresAt },
+      await prisma.otp.upsert({
+        where: { email: email },
+        update: { code: otpCode, expiresAt },
+        create: { email: email, code: otpCode, expiresAt },
       });
 
       await sendOtpEmail(email, otpCode);

@@ -148,3 +148,4 @@ export const deleteSoftwareType = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Failed to delete software type", error });
   }
 };
+

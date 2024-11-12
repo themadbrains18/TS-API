@@ -45,7 +45,7 @@ export async function sendOtpEmail(email: string, otp: string): Promise<void> {
     from: process.env.SMTP_USERNAME, // Sender email address
     to: email, // Recipient email address
     subject: 'Your OTP Code', // Email subject
-    text: `Your OTP code is: ${otp}. It is valid for 10 minutes.`, // Plain text email content
+    text: `Your OTP code is: ${otp}. It is valid for 3 minutes.`, // Plain text email content
   };
 
   // Sending the OTP email

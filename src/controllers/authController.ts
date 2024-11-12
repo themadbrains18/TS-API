@@ -394,7 +394,9 @@ export async function verifyOtp(req: Request): Promise<{ status: number; message
  * - Handles errors and returns an appropriate response if an error occurs.
  */
 export async function resendOtp(req: Request, res: Response) {
+  console.log("herereerr");
   const { email }: { email: string } = req.body;
+
 
   if (!email) {
     return res.status(400).json({ message: 'Email is required' });
@@ -406,6 +408,7 @@ export async function resendOtp(req: Request, res: Response) {
     // if (!user) {
     //   return res.status(400).json({ message: 'User with this email does not exist' });
     // }
+    // console.log("here");
 
     const otpCode = generateOtp();
     const expiresAt = otpExpiryTime();

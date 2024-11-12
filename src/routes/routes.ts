@@ -42,6 +42,7 @@ router.delete('/user/remove-image', authenticateToken, removeUserImage); // Remo
 /**
  * Template routes
  */
+
 router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, createTemplate); // Create a new template (with file upload)
 router.post('/templates/:id/download', templateDownloads); // record a download for a template
 router.get('/templates', getTemplates); // Get all templates by pagination
@@ -54,11 +55,12 @@ router.get('/templates-by-userid/:id', getAllTemplatesByUserId); // Get all temp
 router.get('/templates-by-id/:id', getTemplateById); // Get a specific template by ID
 router.get('/templates/search', getTemplateByTitle); // Get a specific template by ID
 router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken, updateTemplate); // Update a specific template by ID
-router.delete('/templates/:id',  authenticateToken, deleteTemplate); // Delete a specific template by ID
+router.delete('/templates/:id', authenticateToken, deleteTemplate); // Delete a specific template by ID
 
 /**
  * Template Type routes
  */
+
 router.post('/template-types', authenticateToken, createTemplateType); // Create a new TemplateType
 router.get('/template-types', getTemplateTypes); // Get all TemplateTypes
 router.get('/template-types/:id', getTemplateTypeById); // Get TemplateType by ID
@@ -86,6 +88,7 @@ router.delete('/software-types/:id', authenticateToken, deleteSoftwareType); // 
 /**
  * Industry-type Routes definitions
  */
+
 router.post('/industry-type', authenticateToken, createIndustryType); // Create a new industry type
 router.get('/industry-type', getIndustryTypes); // Get all industry types
 router.get('/industry-type/:id', getIndustryTypeById); // Get an industry type by ID
@@ -95,6 +98,7 @@ router.delete('/industry-type/:id', authenticateToken, deleteIndustryType); // D
 /**
  * Credit routes
  */
+
 router.post('/credits', authenticateToken, createCredit); // Create a new credit entry
 router.get('/credits/:templateId', authenticateToken, getCredits); // Get credits for a specific template
 router.put('/credits/:id', authenticateToken, updateCredit); // Update a specific credit entry by ID

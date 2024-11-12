@@ -77,7 +77,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
       }
     }
-console.log(softwareTypeId,"==softwareTypeId");
+    console.log(softwareTypeId, "==softwareTypeId");
 
     // Create a new template
     const newTemplate = await prisma.template.create({
@@ -86,7 +86,7 @@ console.log(softwareTypeId,"==softwareTypeId");
         description,
         industryTypeId: industry,
         templateTypeId,
-        softwareTypeId : softwareTypeId===""?null: softwareTypeId,
+        softwareTypeId: softwareTypeId === "" ? null : softwareTypeId,
         subCategoryId,
         version,
         price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
@@ -146,13 +146,13 @@ console.log(softwareTypeId,"==softwareTypeId");
  */
 export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
-// console.log(id,"==id");
+  // console.log(id,"==id");
 
   try {
     const template = await prisma.template.findUnique({ where: { id } });
     if (!template) return res.status(404).json({ message: 'Template not found.' });
 
-  
+
     await prisma.$transaction([
       // Delete related records in other models
       prisma.credit.deleteMany({ where: { templateId: id } }),
@@ -210,8 +210,7 @@ export async function getTemplates(req: Request, res: Response) {
       sortBy,
     } = req.query;
 
-    console.log(sortBy,"=sort by");
-    
+
     // Initialize filters object
     const filters: any = {};
 
@@ -245,10 +244,23 @@ export async function getTemplates(req: Request, res: Response) {
     // Handle price range filter
     if (priceRanges) {
       const ranges = handleArrayInput(priceRanges);
+      const threshold = 200;
+
       const priceConditions = ranges.map((range: string) => {
         const [minPrice, maxPrice] = range.split('-').map((p) => parseFloat(p));
-        return { gte: minPrice, lte: maxPrice }; // Add range condition
+        return maxPrice >= threshold
+          ? { gte: threshold }  // Condition for prices above threshold
+          : { gte: minPrice, lte: maxPrice }; // Standard range condition
       });
+
+      // Add an additional condition for prices above the threshold if it’s not already covered
+      if (!ranges.some((range: string) => {
+        const [, maxPrice] = range.split('-').map((p) => parseFloat(p));
+        return maxPrice >= threshold;
+      })) {
+        priceConditions.push({ gte: threshold });
+      }
+
 
       // Combine multiple price conditions with OR logic
       filters.OR = priceConditions.map((rangeCondition) => ({
@@ -307,7 +319,7 @@ export async function getTemplates(req: Request, res: Response) {
             select: {
               name: true,
               id: true,
-              profileImg:true
+              profileImg: true
             },
           },
         },
@@ -411,12 +423,12 @@ export const featureTemplates = async (req: Request, res: Response) => {
         price: true,
         templateType: true,
         id: true,
-        softwareType:true,
-        user:{
-          select:{
-            id:true,
-            name:true,
-            profileImg:true
+        softwareType: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profileImg: true
           }
         }
       },
@@ -675,7 +687,10 @@ export async function getTemplateById(req: Request, res: Response) {
     });
     // console.log(template,"==template");
 
-    if (!template) return res.status(404).json({ message: 'Template not found.' });
+    if (!template) {
+      throw new Error('Template not found.');
+    }
+
 
     return res.status(200).json(template);
   } catch (error: any) {
@@ -759,42 +774,74 @@ export async function getTemplateByTitle(req: Request, res: Response) {
 
 export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
-  
-  console.log(req.body,"==req.body");
-  
+
+  console.log(req.body, "==req.body");
+
   // Parse the credits JSON in request body
   let creditData = JSON.parse(req.body.credits || '[]');
-  
+
 
   try {
     // Start a transaction to ensure all updates are atomic
+
+    // Retrieve the existing template with all related entities
+    const existingTemplate = await prisma.template.findUnique({
+      where: { id },
+      include: {
+        sliderImages: true,
+        previewImages: true,
+        previewMobileImages: true,
+        sourceFiles: true,
+        credits: true,
+      },
+    });
+
+    if (!existingTemplate) {
+      throw new Error('Template not found.');
+    }
+
+    // Check user ownership
+    if (existingTemplate.userId !== req.user?.id) {
+      throw new Error('You are not authorized to update this template.');
+    }
+
+    const {
+      title, price, description, industry, templateTypeId,
+      softwareTypeId, version, isPaid, seoTags, techDetails
+    } = req.body;
+
+    // Function to handle file uploads
+    const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
+      return Promise.all(files.map(file => uploadFileToFirebase(file, folder)));
+    };
+
+    // Arrays to store the uploaded URLs
+    let sliderImageUrls: string[] = [];
+    let previewImageUrls: string[] = [];
+    let previewMobileImageUrls: string[] = [];
+    let sourceFileUrls: string[] = [];
+
+    console.log(req.files, "=req.files");
+
+    // Check if req.files is an array or an object with named fields
+    if (Array.isArray(req.files)) {
+      console.log("Files uploaded without named fields");
+    } else if (req.files) {
+      if (req.files.sliderImages) {
+        sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
+      }
+      if (req.files.previewImages) {
+        previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
+      }
+      if (req.files.previewMobileImages) {
+        previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
+      }
+      if (req.files.sourceFiles) {
+        sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
+      }
+    }
+
     const result = await prisma.$transaction(async (prisma) => {
-      
-      // Retrieve the existing template with all related entities
-      const existingTemplate = await prisma.template.findUnique({
-        where: { id },
-        include: {
-          sliderImages: true,
-          previewImages: true,
-          previewMobileImages: true,
-          sourceFiles: true,
-          credits: true,
-        },
-      });
-
-      if (!existingTemplate) {
-        throw new Error('Template not found.');
-      }
-
-      // Check user ownership
-      if (existingTemplate.userId !== req.user?.id) {
-        throw new Error('You are not authorized to update this template.');
-      }
-
-      const {
-        title, price, description, industry, templateTypeId,
-        softwareTypeId, version, isPaid, seoTags, techDetails
-      } = req.body;
 
       // Update the template details
       const updatedTemplate = await prisma.template.update({
@@ -804,7 +851,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
           description,
           industryTypeId: industry,
           templateTypeId,
-          softwareTypeId: (softwareTypeId ==="" || softwareTypeId =="null")?null:softwareTypeId,
+          softwareTypeId: (softwareTypeId === "" || softwareTypeId == "null") ? null : softwareTypeId,
           version,
           price: (price !== "undefined" && isPaid === "true") ? Number(price) : 0,
           isPaid: isPaid === "true",
@@ -813,69 +860,37 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
           credits: {
             updateMany: creditData.length > 0
               ? creditData.map((credit: any, index: number) => ({
-                  where: { id: existingTemplate.credits[index].id },
-                  data: {
-                    fonts: credit.fonts,
-                    images: credit.images,
-                    icons: credit.icons,
-                    illustrations: credit.illustrations,
-                  },
-                }))
+                where: { id: existingTemplate.credits[index].id },
+                data: {
+                  fonts: credit.fonts,
+                  images: credit.images,
+                  icons: credit.icons,
+                  illustrations: credit.illustrations,
+                },
+              }))
               : undefined,
           },
         },
         include: { credits: true },
       });
 
-      // Function to handle file uploads
-      const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
-        return Promise.all(files.map(file => uploadFileToFirebase(file, folder)));
-      };
 
-      // Arrays to store the uploaded URLs
-      let sliderImageUrls: string[] = [];
-      let previewImageUrls: string[] = [];
-      let previewMobileImageUrls: string[] = [];
-      let sourceFileUrls: string[] = [];
-
-      console.log(req.files,"=req.files");
-      
-      // Check if req.files is an array or an object with named fields
-      if (Array.isArray(req.files)) {
-        console.log("Files uploaded without named fields");
-      } else if (req.files) {
-        if (req.files.sliderImages) {
-          sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
-        }
-        if (req.files.previewImages) {
-          previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
-        }
-        if (req.files.previewMobileImages) {
-          previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
-        }
-        if (req.files.sourceFiles) {
-          sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
-        }
-      }
 
       // Conditionally delete and recreate images if new ones are uploaded
       if (sliderImageUrls.length) {
-        await prisma.sliderImage.deleteMany({ where: { templateId: id } });
+
         await Promise.all(sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: id } })));
       }
 
       if (previewImageUrls.length) {
-        await prisma.previewImage.deleteMany({ where: { templateId: id } });
         await Promise.all(previewImageUrls.map(url => prisma.previewImage.create({ data: { imageUrl: url, templateId: id } })));
       }
 
       if (previewMobileImageUrls.length) {
-        await prisma.previewMobileImage.deleteMany({ where: { templateId: id } });
         await Promise.all(previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: id } })));
       }
 
       if (sourceFileUrls.length) {
-        await prisma.sourceFile.deleteMany({ where: { templateId: id } });
         await Promise.all(sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: id } })));
       }
 

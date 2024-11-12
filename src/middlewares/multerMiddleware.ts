@@ -75,7 +75,7 @@ export const uploadFiles = upload.fields([
 const uploadSingleImage = multer({
   storage,
   limits: {
-    fileSize: 2 * 1024 * 1024, // 2MB limit for single images
+    fileSize: 10 * 1024 * 1024, // 2MB limit for single images
   },
   fileFilter: (req, file, cb) => {
     const allowedImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
@@ -108,9 +108,12 @@ export const uploadSingleImageFile = uploadSingleImage.single('profileImg');
  * This custom error handler ensures that the user receives clear and consistent error messages when file uploads fail.
  */
 export const multerErrorHandler = (err: any, req: any, res: any, next: any) => {
+  console.log(err,"==errror");
+  
   if (err instanceof multer.MulterError) {
     return res.status(400).json({ message: err.message });
   } else if (err) {
+
     return res.status(400).json({ message: err.message });
   }
   next();

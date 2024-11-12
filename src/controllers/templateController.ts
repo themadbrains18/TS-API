@@ -783,9 +783,9 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
     }
 
     // Check user ownership
-    if (existingTemplate.userId !== req.user?.id) {
-      throw new Error('You are not authorized to update this template.');
-    }
+    // if (existingTemplate.userId !== req.user?.id) {
+    //   throw new Error('You are not authorized to update this template.');
+    // }
 
     const {
       title, price, description, industry, templateTypeId,

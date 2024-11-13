@@ -113,9 +113,9 @@ router.delete('/credits/:id', authenticateToken, deleteCredit); // Delete a spec
  */
 
 
-router.delete('/sliderImage/:id', authenticateToken, deleteMediaSliderImage); // Create a new credit entry
-router.delete('/previewImage/:id', authenticateToken, deleteMediaPreviewImage); // Create a new credit entry
-router.delete('/previewMobile/:id', authenticateToken, deleteMediaPreviewMobileImage); // Create a new credit entry
+router.delete('/sliderImages/:id', authenticateToken, deleteMediaSliderImage); // Create a new credit entry
+router.delete('/previewImages/:id', authenticateToken, deleteMediaPreviewImage); // Create a new credit entry
+router.delete('/previewMobileImages/:id', authenticateToken, deleteMediaPreviewMobileImage); // Create a new credit entry
 
 
 

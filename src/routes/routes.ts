@@ -13,6 +13,7 @@ import { createSubCategory, getSubCategories, getSubCategoryById, updateSubCateg
 import { createSoftwareType, getSoftwareTypes, getSoftwareTypeById, updateSoftwareType, deleteSoftwareType, } from '../controllers/softwareTypeController';
 import { createIndustryType, getIndustryTypes, getIndustryTypeById, updateIndustryType, deleteIndustryType, } from '../controllers/industryTypeController';
 import { createTemplateSchema, deleteTemplateSchema, getAllTemplatesByUserIdSchema, getTemplateByIdSchema, updateTemplateSchema } from '../dto/template.dto';
+import { deleteMediaPreviewImage, deleteMediaPreviewMobileImage, deleteMediaSliderImage } from '../controllers/mediaController';
 
 /**
  * Initialize the router
@@ -104,6 +105,22 @@ router.get('/credits/:templateId', authenticateToken, getCredits); // Get credit
 router.put('/credits/:id', authenticateToken, updateCredit); // Update a specific credit entry by ID
 router.delete('/credits/:id', authenticateToken, deleteCredit); // Delete a specific credit entry by ID
 
+
+
+/**
+ * 
+ * media routes
+ */
+
+
+router.delete('/sliderImage/:id', authenticateToken, deleteMediaSliderImage); // Create a new credit entry
+router.delete('/previewImage/:id', authenticateToken, deleteMediaPreviewImage); // Create a new credit entry
+router.delete('/previewMobile/:id', authenticateToken, deleteMediaPreviewMobileImage); // Create a new credit entry
+
+
+
+
+
 // /**
 //  * Technical Detail routes
 //  */
@@ -111,5 +128,8 @@ router.delete('/credits/:id', authenticateToken, deleteCredit); // Delete a spec
 // router.get('/technical-details/:templateId', authenticateToken, getTechnicalDetails); // Get technical details for a specific template
 // router.put('/technical-details/:id', authenticateToken, updateTechnicalDetail); // Update a specific technical detail entry by ID
 // router.delete('/technical-details/:id', authenticateToken, deleteTechnicalDetail); // Delete a specific technical detail entry by ID
+
+
+
 
 export default router;

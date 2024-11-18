@@ -65,7 +65,7 @@ model Template {
 
   credits             Credit[]             @relation("TemplateCredits")
   techDetails         Json?
-  sourceFiles         SourceFile[]         @relation("TemplateSourceFiles")
+  sourceFiles         String?
   sliderImages        SliderImage[]        @relation("TemplateSliderImages")
   previewImages       PreviewImage[]       @relation("TemplatePreviewImages")
   previewMobileImages PreviewMobileImage[] @relation("TemplatePreviewMobileImages")
@@ -85,12 +85,12 @@ model Credit {
   templateId    String
 }
 
-model SourceFile {
-  id         String   @id @default(cuid())
-  fileUrl    String   @db.Text
-  template   Template @relation("TemplateSourceFiles", fields: [templateId], references: [id], onDelete: Cascade)
-  templateId String
-}
+// model SourceFile {
+//   id         String   @id @default(cuid())
+//   fileUrl    String   @db.Text
+//   template   Template @relation("TemplateSourceFiles", fields: [templateId], references: [id], onDelete: Cascade)
+//   templateId String
+// }
 
 model SliderImage {
   id         String   @id @default(cuid())

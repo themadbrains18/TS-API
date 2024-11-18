@@ -38,8 +38,10 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
 
     const {
       title, price, description, industry, templateTypeId,
-      subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails,industryName
+      subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails, industryName,sourceFiles
     } = req.body;
+
+
 
     const userId = req.user?.id;
 
@@ -56,7 +58,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     let sliderImageUrls: string[] = [];
     let previewImageUrls: string[] = [];
     let previewMobileImageUrls: string[] = [];
-    let sourceFileUrls: string[] = [];
+    // let sourceFileUrls: string[] = [];
 
     // Check if req.files is an array or an object with named fields
     if (Array.isArray(req.files)) {
@@ -77,6 +79,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
       }
     }
+
     console.log(softwareTypeId, "==softwareTypeId");
 
     // Create a new template
@@ -89,11 +92,12 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         softwareTypeId: softwareTypeId === "" ? null : softwareTypeId,
         subCategoryId,
         version,
-        industryName,
+        industryName: industryName,
         price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
         isPaid: (isPaid === "false" ? false : true),
         seoTags,
         userId,
+        sourceFiles,
         credits: {
           create: creditqwqs.map((credit: any) => ({
             fonts: credit.fonts,
@@ -109,7 +113,6 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         sliderImages: true,
         previewImages: true,
         previewMobileImages: true,
-        sourceFiles: true,
       },
     });
 
@@ -118,7 +121,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       ...sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
       ...previewImageUrls.map(url => prisma.previewImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
       ...previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
-      ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
+      // ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
     ]);
 
     return res.status(201).json({ message: 'Template created successfully', template: newTemplate, });
@@ -157,7 +160,7 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
     await prisma.$transaction([
       // Delete related records in other models
       prisma.credit.deleteMany({ where: { templateId: id } }),
-      prisma.sourceFile.deleteMany({ where: { templateId: id } }),
+      // prisma.sourceFile.deleteMany({ where: { templateId: id } }),
       prisma.sliderImage.deleteMany({ where: { templateId: id } }),
       prisma.previewImage.deleteMany({ where: { templateId: id } }),
       prisma.previewMobileImage.deleteMany({ where: { templateId: id } }),
@@ -246,29 +249,29 @@ export async function getTemplates(req: Request, res: Response) {
     if (priceRanges) {
       const ranges = handleArrayInput(priceRanges);
       const threshold = 200;
-    
-      
+
+
       const priceConditions = ranges.map((range: string) => {
         const [minPrice, maxPrice] = range.split('-').map((p) => parseFloat(p));
         console.log(minPrice, maxPrice, "minPrice, maxPrice");
-    
+
         // Handle "200-more" condition explicitly
         if (isNaN(maxPrice)) {
           return { gte: minPrice }; // "200-more" translates to prices >= 200
         }
-    
+
         // Standard range condition
         return { gte: minPrice, lte: maxPrice };
       });
-    
+
       // Combine multiple price conditions with OR logic
       filters.OR = priceConditions.map((rangeCondition) => ({
         price: rangeCondition,
       }));
-    
+
     }
 
-    
+
 
     // Handle search query
     if (search) {
@@ -313,7 +316,7 @@ export async function getTemplates(req: Request, res: Response) {
           sliderImages: true,
           previewImages: true,
           previewMobileImages: true,
-          sourceFiles: true,
+          // sourceFiles: true,
           templateType: true,
           softwareType: true,
           subCategory: true,
@@ -473,7 +476,7 @@ export const getLatestTemplates = async (req: Request, res: Response) => {
         credits: true,
         sliderImages: true,
         previewImages: true,
-        sourceFiles: true,
+        // sourceFiles: true,
         previewMobileImages: true,
       },
     });
@@ -595,7 +598,7 @@ export const getPopularTemplates = async (req: Request, res: Response) => {
         credits: true,
         sliderImages: true,
         previewImages: true,
-        sourceFiles: true,
+        // sourceFiles: true,
         previewMobileImages: true,
       },
     });
@@ -626,7 +629,7 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
   try {
 
     let id = req.params.id || req.user?.id
- 
+
 
     const templates = await prisma.template.findMany(
       {
@@ -640,7 +643,7 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
           sliderImages: true,
           previewImages: true,
           previewMobileImages: true,
-          sourceFiles: true,
+          // sourceFiles: true,
         },
       }
     )
@@ -674,7 +677,7 @@ export async function getTemplateById(req: Request, res: Response) {
         sliderImages: true,
         previewImages: true,
         previewMobileImages: true,
-        sourceFiles: true,
+        // sourceFiles: true,
         softwareType: true,
         user: {
           select: {
@@ -684,7 +687,7 @@ export async function getTemplateById(req: Request, res: Response) {
         }
       },
     });
-   
+
     if (!template) {
       throw new Error('Template not found.');
     }
@@ -788,7 +791,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
         sliderImages: true,
         previewImages: true,
         previewMobileImages: true,
-        sourceFiles: true,
+        // sourceFiles: true,
         credits: true,
       },
     });
@@ -804,7 +807,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
 
     const {
       title, price, description, industry, templateTypeId,
-      softwareTypeId, version, isPaid, seoTags, techDetails
+      softwareTypeId, version, isPaid, seoTags, techDetails,sourceFiles
     } = req.body;
 
     // Function to handle file uploads
@@ -816,9 +819,8 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
     let sliderImageUrls: string[] = [];
     let previewImageUrls: string[] = [];
     let previewMobileImageUrls: string[] = [];
-    let sourceFileUrls: string[] = [];
+    // let sourceFileUrls: string[] = [];
 
-    console.log(req.files, "=req.files");
 
     // Check if req.files is an array or an object with named fields
     if (Array.isArray(req.files)) {
@@ -833,9 +835,9 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       if (req.files.previewMobileImages) {
         previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
       }
-      if (req.files.sourceFiles) {
-        sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
-      }
+      // if (req.files.sourceFiles) {
+      //   sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
+      // }
     }
 
     const result = await prisma.$transaction(async (prisma) => {
@@ -854,6 +856,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
           isPaid: isPaid === "true",
           seoTags,
           techDetails,
+          sourceFiles,
           credits: {
             updateMany: creditData.length > 0
               ? creditData.map((credit: any, index: number) => ({
@@ -887,9 +890,9 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
         await Promise.all(previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: id } })));
       }
 
-      if (sourceFileUrls.length) {
-        await Promise.all(sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: id } })));
-      }
+      // if (sourceFileUrls.length) {
+      //   await Promise.all(sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: id } })));
+      // }
 
       return updatedTemplate;
     });

@@ -38,7 +38,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
 
     const {
       title, price, description, industry, templateTypeId,
-      subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails
+      subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails,industryName
     } = req.body;
 
     const userId = req.user?.id;
@@ -89,6 +89,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         softwareTypeId: softwareTypeId === "" ? null : softwareTypeId,
         subCategoryId,
         version,
+        industryName,
         price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
         isPaid: (isPaid === "false" ? false : true),
         seoTags,

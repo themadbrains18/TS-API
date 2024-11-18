@@ -31,8 +31,6 @@ const nodeMailer_1 = require("../services/nodeMailer");
  */
 async function createTemplate(req, res) {
     try {
-        // Parse and validate request data using DTO schema
-        console.log("hererer", req.body);
         // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
         let creditqwqs = JSON.parse(req.body.credits);
         const { title, price, description, industry, templateTypeId, subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails } = req.body;
@@ -69,7 +67,7 @@ async function createTemplate(req, res) {
                 sourceFileUrls = await uploadFiles(req.files.sourceFiles, 'sourceFiles');
             }
         }
-        console.log(softwareTypeId, "==softwareTypeId");
+       
         // Create a new template
         const newTemplate = await server_1.default.template.create({
             data: {
@@ -134,7 +132,6 @@ async function createTemplate(req, res) {
  */
 async function deleteTemplate(req, res) {
     const { id } = req.params;
-    // console.log(id,"==id");
     try {
         const template = await server_1.default.template.findUnique({ where: { id } });
         if (!template)
@@ -366,7 +363,7 @@ exports.getAllTemplates = getAllTemplates;
  */
 const featureTemplates = async (req, res) => {
     try {
-        console.log("here");
+    
         const featureTemplates = await server_1.default.template.findMany({
             select: {
                 sliderImages: true,
@@ -560,7 +557,7 @@ exports.getPopularTemplates = getPopularTemplates;
 async function getAllTemplatesByUserId(req, res) {
     try {
         let id = req.params.id || req.user?.id;
-        console.log(id, "==is");
+        
         const templates = await server_1.default.template.findMany({
             where: { userId: id },
             include: {
@@ -612,7 +609,7 @@ async function getTemplateById(req, res) {
                 }
             },
         });
-        // console.log(template,"==template");
+        
         if (!template) {
             throw new Error('Template not found.');
         }
@@ -690,7 +687,6 @@ async function getTemplateByTitle(req, res) {
  */
 async function updateTemplate(req, res) {
     const { id } = req.params;
-    console.log(req.body, "==req.body");
     // Parse the credits JSON in request body
     let creditData = JSON.parse(req.body.credits || '[]');
     try {

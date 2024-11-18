@@ -146,7 +146,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
  */
 export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
-  // console.log(id,"==id");
+
 
   try {
     const template = await prisma.template.findUnique({ where: { id } });
@@ -245,28 +245,29 @@ export async function getTemplates(req: Request, res: Response) {
     if (priceRanges) {
       const ranges = handleArrayInput(priceRanges);
       const threshold = 200;
-
+    
+      
       const priceConditions = ranges.map((range: string) => {
         const [minPrice, maxPrice] = range.split('-').map((p) => parseFloat(p));
-        return maxPrice >= threshold
-          ? { gte: threshold }  // Condition for prices above threshold
-          : { gte: minPrice, lte: maxPrice }; // Standard range condition
+        console.log(minPrice, maxPrice, "minPrice, maxPrice");
+    
+        // Handle "200-more" condition explicitly
+        if (isNaN(maxPrice)) {
+          return { gte: minPrice }; // "200-more" translates to prices >= 200
+        }
+    
+        // Standard range condition
+        return { gte: minPrice, lte: maxPrice };
       });
-
-      // Add an additional condition for prices above the threshold if it’s not already covered
-      if (!ranges.some((range: string) => {
-        const [, maxPrice] = range.split('-').map((p) => parseFloat(p));
-        return maxPrice >= threshold;
-      })) {
-        priceConditions.push({ gte: threshold });
-      }
-
-
+    
       // Combine multiple price conditions with OR logic
       filters.OR = priceConditions.map((rangeCondition) => ({
         price: rangeCondition,
       }));
+    
     }
+
+    
 
     // Handle search query
     if (search) {
@@ -484,8 +485,6 @@ export const getLatestTemplates = async (req: Request, res: Response) => {
 };
 
 
-
-
 /**
  * Handles the download process for a template, including tracking downloads for both logged-in and unregistered users.
  * 
@@ -502,6 +501,7 @@ export const getLatestTemplates = async (req: Request, res: Response) => {
  * - If the user has reached the download limit or other conditions are not met, an appropriate error message is returned.
  * - In case of an error, a `500 Internal Server Error` response is returned with the error message.
  */
+
 export const templateDownloads = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { userId, email, url } = req.body; // Expecting `userId` for logged-in users and `email` for unregistered users
@@ -625,7 +625,7 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
   try {
 
     let id = req.params.id || req.user?.id
-    console.log(id, "==is");
+ 
 
     const templates = await prisma.template.findMany(
       {
@@ -665,8 +665,6 @@ export async function getAllTemplatesByUserId(req: Request, res: Response) {
 export async function getTemplateById(req: Request, res: Response) {
   const { id } = req.params;
 
-
-
   try {
     const template = await prisma.template.findUnique({
       where: { id },
@@ -685,8 +683,7 @@ export async function getTemplateById(req: Request, res: Response) {
         }
       },
     });
-    // console.log(template,"==template");
-
+   
     if (!template) {
       throw new Error('Template not found.');
     }
@@ -775,7 +772,6 @@ export async function getTemplateByTitle(req: Request, res: Response) {
 export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
 
-  console.log(req.body, "==req.body");
 
   // Parse the credits JSON in request body
   let creditData = JSON.parse(req.body.credits || '[]');

@@ -285,7 +285,10 @@ export async function forgetPassword(req: Request, res: Response) {
 export async function resetPasswordWithOtp(req: Request, res: Response) {
   const { email, otp, newPassword, confirmPassword }: { email: string; otp: string; newPassword: string; confirmPassword: string } = req.body;
 
-  // console.log(email, otp, newPassword, confirmPassword , "email, otp, newPassword, confirmPassword")
+  // if (!user || !(await comparePassword(password, user.password))) {
+  //   return res.status(400).json({ message: 'Invalid credentials' });
+  // }
+
 
 
   if (!email || !otp) {
@@ -298,10 +301,14 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const isNewPasswordSame = await bcrypt.compare(newPassword, user.password);
+    if (isNewPasswordSame) {
+      return res.status(400).json({ results: { message: 'New password cannot be the same as the old password' } });
+    }
+
+
     // Generate JWT Token for the session
     if (newPassword) {
-      console.log("here in this");
-
       if (newPassword !== confirmPassword) {
         return res.status(400).json({ message: 'Passwords do not match' });
       }
@@ -314,17 +321,11 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
         data: { password: hashedPassword },
       });
 
-
       return res.status(200).json({ message: 'Password reset successfully.', });
     }
     else {
       const userOtp = await prisma.otp.findUnique({ where: { email: email } });
-
       const verificationResponse = await verifyOtp(req);
-      console.log(verificationResponse,
-        " verification response", newPassword
-      );
-
       // Check if OTP verification was successful
       if (verificationResponse.status === 200) {
         return res.status(verificationResponse.status).json({ results: { message: verificationResponse.message, otp: true } });
@@ -333,6 +334,7 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
         return res.status(verificationResponse.status).json(verificationResponse.message);
       }
     }
+
 
   } catch (error: any) {
     return res.status(500).json({ message: 'Error resetting password', error: error.message });
@@ -373,7 +375,7 @@ export async function verifyOtp(req: Request): Promise<{ status: number; message
 
     return { status: 200, message: 'OTP verified successfully.' };
   } catch (error: any) {
-    console.error(error);
+    console.error(error.message, "error.message");
     return { status: 500, message: error.message };
   }
 }
@@ -394,7 +396,7 @@ export async function verifyOtp(req: Request): Promise<{ status: number; message
  * - Handles errors and returns an appropriate response if an error occurs.
  */
 export async function resendOtp(req: Request, res: Response) {
-  console.log("herereerr");
+
   const { email }: { email: string } = req.body;
 
 
@@ -408,7 +410,7 @@ export async function resendOtp(req: Request, res: Response) {
     // if (!user) {
     //   return res.status(400).json({ message: 'User with this email does not exist' });
     // }
-    // console.log("here");
+
 
     const otpCode = generateOtp();
     const expiresAt = otpExpiryTime();
@@ -447,7 +449,7 @@ export async function checkUser(req: Request, res: Response) {
       console.error("User not authenticated or user ID missing");
       return res.status(401).json({ message: "Unauthorized: User not authenticated" });
     }
-    console.log("hreerer");
+
 
     let user = await prisma.user.findUnique({
       where: { id: req.user.id },

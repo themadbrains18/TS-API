@@ -108,7 +108,6 @@ async function register(req, res) {
         }
         if (otp) {
             const verificationResponse = await verifyOtp(req);
-            console.log(verificationResponse, "==response");
             if (verificationResponse.status === 200) {
                 const hashedPassword = await hashPassword(password);
                 const newUser = await server_1.default.user.create({
@@ -178,7 +177,6 @@ async function login(req, res) {
                 });
             }
             else {
-                console.log("herer", verificationResponse.status);
                 return res.status(verificationResponse.status).json({ message: verificationResponse.message });
             }
         }
@@ -256,7 +254,6 @@ async function forgetPassword(req, res) {
  */
 async function resetPasswordWithOtp(req, res) {
     const { email, otp, newPassword, confirmPassword } = req.body;
-    // console.log(email, otp, newPassword, confirmPassword , "email, otp, newPassword, confirmPassword")
     if (!email || !otp) {
         return res.status(400).json({ message: 'All fields are required' });
     }
@@ -267,7 +264,7 @@ async function resetPasswordWithOtp(req, res) {
         }
         // Generate JWT Token for the session
         if (newPassword) {
-            console.log("here in this");
+         
             if (newPassword !== confirmPassword) {
                 return res.status(400).json({ message: 'Passwords do not match' });
             }
@@ -283,7 +280,6 @@ async function resetPasswordWithOtp(req, res) {
         else {
             const userOtp = await server_1.default.otp.findUnique({ where: { email: email } });
             const verificationResponse = await verifyOtp(req);
-            console.log(verificationResponse, " verification response", newPassword);
             // Check if OTP verification was successful
             if (verificationResponse.status === 200) {
                 return res.status(verificationResponse.status).json({ results: { message: verificationResponse.message, otp: true } });
@@ -346,7 +342,7 @@ async function verifyOtp(req) {
  * - Handles errors and returns an appropriate response if an error occurs.
  */
 async function resendOtp(req, res) {
-    console.log("herereerr");
+
     const { email } = req.body;
     if (!email) {
         return res.status(400).json({ message: 'Email is required' });
@@ -356,7 +352,7 @@ async function resendOtp(req, res) {
         // if (!user) {
         //   return res.status(400).json({ message: 'User with this email does not exist' });
         // }
-        // console.log("here");
+    
         const otpCode = generateOtp();
         const expiresAt = otpExpiryTime();
         await server_1.default.otp.upsert({
@@ -390,7 +386,7 @@ async function checkUser(req, res) {
             console.error("User not authenticated or user ID missing");
             return res.status(401).json({ message: "Unauthorized: User not authenticated" });
         }
-        console.log("hreerer");
+      
         let user = await server_1.default.user.findUnique({
             where: { id: req.user.id },
         });

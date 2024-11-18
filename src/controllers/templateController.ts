@@ -75,9 +75,9 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       if (req.files.previewMobileImages) {
         previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
       }
-      if (req.files.sourceFiles) {
-        sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
-      }
+      // if (req.files.sourceFiles) {
+      //   sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
+      // }
     }
 
     console.log(softwareTypeId, "==softwareTypeId");

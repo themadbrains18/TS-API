@@ -90,7 +90,7 @@ router.delete('/software-types/:id', authenticateToken, deleteSoftwareType); // 
  * Industry-type Routes definitions
  */
 
-router.post('/industry-type', authenticateToken, createIndustryType); // Create a new industry type
+router.post('/industry-type', createIndustryType); // Create a new industry type
 router.get('/industry-type', getIndustryTypes); // Get all industry types
 router.get('/industry-type/:id', getIndustryTypeById); // Get an industry type by ID
 router.put('/industry-type/:id', authenticateToken, updateIndustryType); // Update an industry type

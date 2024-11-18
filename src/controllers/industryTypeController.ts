@@ -44,8 +44,12 @@ export const createIndustryType = async (req: Request, res: Response) => {
  */
 export const getIndustryTypes = async (req: Request, res: Response) => {
   try {
-    const industryTypes = await prisma.industryType.findMany();
-    return res.status(200).json({results:industryTypes});
+    const industryTypes = await prisma.industryType.findMany({
+      orderBy: {
+        createdAt: 'asc',
+      }
+    });
+    return res.status(200).json({ results: industryTypes });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Failed to retrieve industry types", error });

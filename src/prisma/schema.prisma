@@ -160,6 +160,8 @@ model IndustryType {
   id        String     @id @default(cuid())
   name      String     @unique
   templates Template[]
+    createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
 }
 
 // model Template {

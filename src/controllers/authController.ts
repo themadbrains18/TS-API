@@ -301,14 +301,16 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isNewPasswordSame = await bcrypt.compare(newPassword, user.password);
-    if (isNewPasswordSame) {
-      return res.status(400).json({ results: { message: 'New password cannot be the same as the old password' } });
-    }
+
+
 
 
     // Generate JWT Token for the session
     if (newPassword) {
+      const isNewPasswordSame = await bcrypt.compare(newPassword, user.password);
+      if (isNewPasswordSame) {
+        return res.status(400).json({ results: { message: 'New password cannot be the same as the old password' } });
+      }
       if (newPassword !== confirmPassword) {
         return res.status(400).json({ message: 'Passwords do not match' });
       }

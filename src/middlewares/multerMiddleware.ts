@@ -52,9 +52,9 @@ const upload = multer({
  * The `uploadFiles` middleware is typically used in routes where multiple file uploads are expected, such as for template or product creation.
  */
 export const uploadFiles = upload.fields([
-  { name: 'sliderImages', maxCount: 10 },
-  { name: 'previewImages', maxCount: 10 },
-  { name: 'previewMobileImages', maxCount: 10 },
+  { name: 'sliderImages', maxCount: 100 },
+  { name: 'previewImages', maxCount: 100 },
+  { name: 'previewMobileImages', maxCount: 100 },
   // { name: 'sourceFiles', maxCount: 10 },
 ]);
 

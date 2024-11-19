@@ -309,7 +309,7 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
     if (newPassword) {
       const isNewPasswordSame = await bcrypt.compare(newPassword, user.password);
       if (isNewPasswordSame) {
-        return res.status(400).json({ results: { message: 'New password cannot be the same as the old password' } });
+        return res.status(400).json({ message: 'New password cannot be the same as the old password' });
       }
       if (newPassword !== confirmPassword) {
         return res.status(400).json({ message: 'Passwords do not match' });

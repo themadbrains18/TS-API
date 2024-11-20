@@ -46,8 +46,8 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     const userId = req.user?.id;
 
     // Validate required fields
-    if (!title || !userId || !seoTags || !credits || !techDetails) {
-      return res.status(400).json({ message: 'Title, price, user ID, SEO tags, credits, and tech details are required.' });
+    if (!title || !userId  || !credits || !techDetails) {
+      return res.status(400).json({ message: 'Title, user ID, SEO tags, credits, and tech details are required.' });
     }
 
     const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
@@ -720,16 +720,21 @@ export async function getTemplateByTitle(req: Request, res: Response) {
   const query = typeof req.query.query === 'string' ? req.query.query : undefined;
   const subCategoryId = typeof req.query.subCategoryId === 'string' ? req.query.subCategoryId : undefined;
 
-  // Early return if query is empty
-  if (!query) {
-    return res.status(200).json({ templates: [] }); // Return an empty array if there is no query
-  }
+  console.log(query,"==query");
+  
 
   try {
     const results = await prisma.template.findMany({
       where: {
         AND: [
-          { title: { contains: query } }, // Apply title filter as query is valid
+          query
+            ? {
+                OR: [
+                  { title: { contains: query} }, // Search in title
+                  { seoTags: { array_contains: query } }, // Search in seoTags
+                ],
+              }
+            : {}, // If no query, ignore this filter
           subCategoryId ? { subCategoryId } : {}, // Apply subCategoryId filter if valid
         ],
       },
@@ -807,7 +812,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
 
     const {
       title, price, description, industry, templateTypeId,
-      softwareTypeId, version, isPaid, seoTags, techDetails,sourceFiles
+      softwareTypeId, version, isPaid, seoTags, techDetails,sourceFiles,industryName
     } = req.body;
 
     // Function to handle file uploads
@@ -849,6 +854,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
           title,
           description,
           industryTypeId: industry,
+          industryName,
           templateTypeId,
           softwareTypeId: (softwareTypeId === "" || softwareTypeId == "null") ? null : softwareTypeId,
           version,

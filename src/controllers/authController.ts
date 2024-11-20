@@ -106,6 +106,7 @@ export async function register(req: Request, res: Response) {
       });
 
       await sendOtpEmail(email, otpCode);
+
     }
     if (otp) {
       const verificationResponse = await verifyOtp(req);
@@ -125,7 +126,7 @@ export async function register(req: Request, res: Response) {
     }
 
     return res.status(201).json({
-      results: { message: 'User registered successfully. OTP sent to email.', otp: true }
+      results: { message: 'OTP sent to email.', otp: true }
     });
   } catch (error: any) {
     console.error(error);
@@ -241,6 +242,7 @@ export async function logout(req: Request, res: Response) {
  * 
  */
 export async function forgetPassword(req: Request, res: Response) {
+
   const { email }: { email: string } = req.body;
 
   if (!email) {
@@ -289,8 +291,6 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
   //   return res.status(400).json({ message: 'Invalid credentials' });
   // }
 
-
-
   if (!email || !otp) {
     return res.status(400).json({ message: 'All fields are required' });
   }
@@ -300,9 +300,6 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-
-
 
 
     // Generate JWT Token for the session
@@ -333,15 +330,15 @@ export async function resetPasswordWithOtp(req: Request, res: Response) {
         return res.status(verificationResponse.status).json({ results: { message: verificationResponse.message, otp: true } });
 
       } else {
-        return res.status(verificationResponse.status).json(verificationResponse.message);
+        return res.status(verificationResponse.status).json({ message: verificationResponse.message });
       }
     }
-
 
   } catch (error: any) {
     return res.status(500).json({ message: 'Error resetting password', error: error.message });
   }
 }
+
 
 /**
  * Verifies the OTP for a given email.

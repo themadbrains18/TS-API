@@ -13,7 +13,7 @@ import { createSubCategory, getSubCategories, getSubCategoryById, updateSubCateg
 import { createSoftwareType, getSoftwareTypes, getSoftwareTypeById, updateSoftwareType, deleteSoftwareType, } from '../controllers/softwareTypeController';
 import { createIndustryType, getIndustryTypes, getIndustryTypeById, updateIndustryType, deleteIndustryType, } from '../controllers/industryTypeController';
 import { createTemplateSchema, deleteTemplateSchema, getAllTemplatesByUserIdSchema, getTemplateByIdSchema, updateTemplateSchema } from '../dto/template.dto';
-import { deleteMediaPreviewImage, deleteMediaPreviewMobileImage, deleteMediaSliderImage } from '../controllers/mediaController';
+import { deleteAllMediaPreviewImage, deleteAllMediaPreviewMobileImage, deleteAllMediaSliderImage, deleteMediaPreviewImage, deleteMediaPreviewMobileImage, deleteMediaSliderImage } from '../controllers/mediaController';
 
 /**
  * Initialize the router
@@ -116,6 +116,9 @@ router.delete('/credits/:id', authenticateToken, deleteCredit); // Delete a spec
 router.delete('/sliderImages/:id', authenticateToken, deleteMediaSliderImage); // Create a new credit entry
 router.delete('/previewImages/:id', authenticateToken, deleteMediaPreviewImage); // Create a new credit entry
 router.delete('/previewMobileImages/:id', authenticateToken, deleteMediaPreviewMobileImage); // Create a new credit entry
+router.delete('/sliderImages/all/:id', authenticateToken, deleteAllMediaSliderImage); // Create a new credit entry
+router.delete('/previewImages/all/:id', authenticateToken, deleteAllMediaPreviewImage); // Create a new credit entry
+router.delete('/previewMobileImages/all/:id', authenticateToken, deleteAllMediaPreviewMobileImage); // Create a new credit entry
 
 
 

@@ -845,6 +845,9 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       // }
     }
 
+    console.log(industryName,"==industryName");
+    
+
     const result = await prisma.$transaction(async (prisma) => {
 
       // Update the template details

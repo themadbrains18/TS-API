@@ -21,8 +21,8 @@ export const deleteMediaPreviewImage = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {
-        await prisma.previewImage.deleteMany({
-            where: {templateId: id },
+        await prisma.previewImage.delete({
+            where: { id },
         });
         return res.status(204).send(); // No content to send back
     } catch (error) {
@@ -35,8 +35,8 @@ export const deleteMediaPreviewMobileImage = async (req: Request, res: Response)
     const { id } = req.params;
 
     try {
-        await prisma.previewMobileImage.deleteMany({
-            where: {templateId: id },
+        await prisma.previewMobileImage.delete({
+            where: {id },
         });
         return res.status(204).send(); // No content to send back
     } catch (error) {
@@ -62,8 +62,8 @@ export const deleteAllMediaPreviewImage = async (req: Request, res: Response) =>
     const { id } = req.params;
 
     try {
-        await prisma.previewImage.delete({
-            where: { id },
+        await prisma.previewImage.deleteMany({
+            where: {templateId: id },
         });
         return res.status(204).send(); // No content to send back
     } catch (error) {
@@ -76,8 +76,8 @@ export const deleteAllMediaPreviewMobileImage = async (req: Request, res: Respon
     const { id } = req.params;
 
     try {
-        await prisma.previewMobileImage.delete({
-            where: { id },
+        await prisma.previewMobileImage.deleteMany({
+            where: {templateId:  id },
         });
         return res.status(204).send(); // No content to send back
     } catch (error) {

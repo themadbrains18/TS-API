@@ -65,7 +65,7 @@ model Template {
 
   credits             Credit[]             @relation("TemplateCredits")
   techDetails         Json?
-  sourceFiles         String?
+  sourceFiles         String?                @db.VarChar(2048)
   sliderImages        SliderImage[]        @relation("TemplateSliderImages")
   previewImages       PreviewImage[]       @relation("TemplatePreviewImages")
   previewMobileImages PreviewMobileImage[] @relation("TemplatePreviewMobileImages")

@@ -38,50 +38,50 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H 13.201.86.238 >> ~/.ssh/known_hosts
+        ssh-keyscan -H 46.202.163.196 >> ~/.ssh/known_hosts
         # Debug SSH connection
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.201.86.238 'echo "SSH connection successful" || exit 1'
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'echo "SSH connection successful" || exit 1'
         
     # - name: Remove .next cache
-    #   run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.201.86.238 'rm -rf /var/www/api/TS-API/.next'
+    #   run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'rm -rf /var/www/templatestudio.ai/TsAPi/.next'
     - name: Set Ownership on Target Directory
       run: |
-        echo "Setting ownership for /var/www/api/TS-API on the server"
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.201.86.238 'sudo chown -R ubuntu:ubuntu /var/www/api/TS-API'
+        echo "Setting ownership for /var/www/templatestudio.ai/TsAPi on the server"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'sudo chown -R ubuntu:ubuntu /var/www/templatestudio.ai/TsAPi'
 
     # Using rsync for faster and differential file transfer
     - name: Sync files using rsync
       run: |
         echo "Attempting to sync files using rsync"
-        rsync -avz --delete --exclude 'node_modules' --exclude '.git' --exclude '.next' --exclude '.github' -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" ./ ubuntu@13.201.86.238:/var/www/api/TS-API || exit 1
+        rsync -avz --delete --exclude 'node_modules' --exclude '.git' --exclude '.next' --exclude '.github' -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" ./ root@46.202.163.196:/var/www/templatestudio.ai/TsAPi || exit 1
 
     # Alternative option: Using tarball compression if you want to use this instead of rsync
     # Uncomment the following block if you want to use tarball compression instead of rsync
     # - name: Compress files
-    #   run: tar -czf deployment.tar.gz . test test
+    #   run: tar -czf deployment.tar.gz . test
 
     # - name: Copy tarball to server
-    #   run: scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no deployment.tar.gz ubuntu@13.201.86.238:/var/www/api/TS-API
+    #   run: scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no deployment.tar.gz root@46.202.163.196:/var/www/templatestudio.ai/TsAPi
 
-    # - name: Extract tarball on server test
+    # - name: Extract tarball on server test  
     #   run: |
-    #     ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.201.86.238 'cd /var/www/api/TS-API && tar -xzf deployment.tar.gz && rm deployment.tar.gz'
+    #     ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'cd /var/www/templatestudio.ai/TsAPi && tar -xzf deployment.tar.gz && rm deployment.tar.gz'
 
 
-    # - name: Debug SCP Command
+    # - name: Debug SCP Command 
     #   run: |
     #     echo "Checking current directory"
     #     ls -la
     #     echo "Attempting to copy files"
-    #     scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./* ubuntu@13.201.86.238:/var/www/api/TS-API || exit 1
-    #     #scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./ ubuntu@13.201.86.238:/var/www/api/TS-API || exit 1
+    #     scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./* root@46.202.163.196:/var/www/templatestudio.ai/TsAPi || exit 1
+    #     #scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./ root@46.202.163.196:/var/www/templatestudio.ai/TsAPi || exit 1
     # Cache clean step (added)
     
     # - name: Clean Nginx Cache
     #   run: |
     #     echo "Cleaning Nginx cache"
-    #     ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.201.86.238 'sudo rm -rf /var/cache/nginx/* && sudo chown -R www-data:www-data /var/cache/nginx'
+    #     ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'sudo rm -rf /var/cache/nginx/* && sudo chown -R www-data:www-data /var/cache/nginx'
 
     - name: Deploy to AWS
       run: |
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.201.86.238 'cd /var/www/api/TS-API && npm install &&  pm2 restart all' || exit 1
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'cd /var/www/templatestudio.ai/TsAPi && npm install && npm run build && pm2 restart all' || exit 1

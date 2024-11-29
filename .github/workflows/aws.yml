@@ -58,7 +58,7 @@ jobs:
     # Alternative option: Using tarball compression if you want to use this instead of rsync
     # Uncomment the following block if you want to use tarball compression instead of rsync
     # - name: Compress files
-    #   run: tar -czf deployment.tar.gz . test
+    #   run: tar -czf deployment.tar.gz . test 
 
     # - name: Copy tarball to server
     #   run: scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no deployment.tar.gz root@46.202.163.196:/var/www/templatestudio.ai/TsAPi

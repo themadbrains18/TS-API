@@ -82,7 +82,7 @@ export async function register(req: Request, res: Response) {
   const { name, email, password, confirmPassword, otp } = req.body;
 
   if (!name || !email || !password || !confirmPassword) {
-    return res.status(400).json({ message: 'All fields are required' });
+    return res.status(400).json({ message: 'All fields are required..' });
   }
 
   if (password !== confirmPassword) {

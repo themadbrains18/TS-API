@@ -17,6 +17,10 @@ const app = express();
  * Middleware for enabling Cross-Origin Resource Sharing (CORS)
  * This allows the server to accept requests from different origins
  */
+
+// app.use(cors({
+//     origin : ['https://ts-2vjaxqiw3-the-mad-brains-projects.vercel.app/','http://localhost:3001','https://ts-bc1qdhfbd-the-mad-brains-projects.vercel.app/']
+// }));
 app.use(cors());
 
 /**

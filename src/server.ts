@@ -23,7 +23,7 @@ app.use(express.json());
 /**
  * Define server port, defaulting to 5000 if not specified in .env
  */
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 async function startServer() {
   try {

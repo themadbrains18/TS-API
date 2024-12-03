@@ -744,6 +744,8 @@ export async function getTemplateByTitle(req: Request, res: Response) {
         description: true,
         imageUrl: true,
         price: true,
+        version:true,
+        templateType:true
       },
     });
 

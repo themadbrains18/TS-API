@@ -43,17 +43,17 @@ jobs:
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'echo "SSH connection successful" || exit 1'
         
     # - name: Remove .next cache
-    #   run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'rm -rf /var/www/templatestudio.ai/TsAPi/.next'
+    #   run: ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'rm -rf /var/www/templatestudio.ai/StagingApi/.next'
     - name: Set Ownership on Target Directory
       run: |
-        echo "Setting ownership for /var/www/templatestudio.ai/TsAPi on the server"
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'sudo chown -R ubuntu:ubuntu /var/www/templatestudio.ai/TsAPi'
+        echo "Setting ownership for /var/www/templatestudio.ai/StagingApi on the server"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'sudo chown -R ubuntu:ubuntu /var/www/templatestudio.ai/StagingApi'
 
     # Using rsync for faster and differential file transfer
     - name: Sync files using rsync
       run: |
         echo "Attempting to sync files using rsync"
-        rsync -avz --delete --exclude 'node_modules' --exclude '.git' --exclude '.next' --exclude '.github' -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" ./ root@46.202.163.196:/var/www/templatestudio.ai/TsAPi || exit 1
+        rsync -avz --delete --exclude 'node_modules' --exclude '.git' --exclude '.next' --exclude '.github' -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" ./ root@46.202.163.196:/var/www/templatestudio.ai/StagingApi || exit 1
 
     # Alternative option: Using tarball compression if you want to use this instead of rsync
     # Uncomment the following block if you want to use tarball compression instead of rsync
@@ -61,11 +61,11 @@ jobs:
     #   run: tar -czf deployment.tar.gz . test 
 
     # - name: Copy tarball to server
-    #   run: scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no deployment.tar.gz root@46.202.163.196:/var/www/templatestudio.ai/TsAPi
+    #   run: scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no deployment.tar.gz root@46.202.163.196:/var/www/templatestudio.ai/StagingApi
 
     # - name: Extract tarball on server test  
     #   run: |
-    #     ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'cd /var/www/templatestudio.ai/TsAPi && tar -xzf deployment.tar.gz && rm deployment.tar.gz'
+    #     ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'cd /var/www/templatestudio.ai/StagingApi && tar -xzf deployment.tar.gz && rm deployment.tar.gz'
 
 
     # - name: Debug SCP Command 
@@ -73,8 +73,8 @@ jobs:
     #     echo "Checking current directory"
     #     ls -la
     #     echo "Attempting to copy files"
-    #     scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./* root@46.202.163.196:/var/www/templatestudio.ai/TsAPi || exit 1
-    #     #scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./ root@46.202.163.196:/var/www/templatestudio.ai/TsAPi || exit 1
+    #     scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./* root@46.202.163.196:/var/www/templatestudio.ai/StagingApi || exit 1
+    #     #scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./ root@46.202.163.196:/var/www/templatestudio.ai/StagingApi || exit 1
     # Cache clean step (added)
     
     # - name: Clean Nginx Cache
@@ -84,4 +84,4 @@ jobs:
 
     - name: Deploy to AWS
       run: |
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'cd /var/www/templatestudio.ai/TsAPi && npm install  && pm2 restart all' || exit 1
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'cd /var/www/templatestudio.ai/StagingApi && npm install  && pm2 restart all' || exit 1

@@ -1,9 +1,9 @@
-name: Deploy to AWS EC2
+name: Deploy to Hostinger Staging
 
 on:
   push:
     branches:
-      - main
+      - dev
 
 jobs:
   deploy:

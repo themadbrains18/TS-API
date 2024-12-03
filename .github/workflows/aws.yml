@@ -57,7 +57,7 @@ jobs:
 
     # Alternative option: Using tarball compression if you want to use this instead of rsync
     # Uncomment the following block if you want to use tarball compression instead of rsync
-    # - name: Compress files
+    # - name: Compress files 
     #   run: tar -czf deployment.tar.gz . test 
 
     # - name: Copy tarball to server
@@ -84,4 +84,4 @@ jobs:
 
     - name: Deploy to AWS
       run: |
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'cd /var/www/templatestudio.ai/TsAPi && npm install && npm run build && pm2 restart all' || exit 1
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@46.202.163.196 'cd /var/www/templatestudio.ai/TsAPi && npm install  && pm2 restart all' || exit 1

@@ -4,7 +4,7 @@ import { validateData } from '../middlewares/zodValidationMiddleware';
 import { userLoginSchema, userSignUpSchema } from '../dto/user.dto';
 
 import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser, updateUserDetails, updateUserImage, getUserDownloads, removeUserImage, deleteUser, getFreeDownload } from '../controllers/authController';
-import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, featureTemplates, getTemplateByTitle, } from '../controllers/templateController';
+import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, featureTemplates, getTemplateByTitle, draftemplate, getAllTemplatesdashboard, } from '../controllers/templateController';
 import { createCredit, getCredits, updateCredit, deleteCredit, } from '../controllers/creditController';
 // import { createTechnicalDetail, getTechnicalDetails, updateTechnicalDetail, deleteTechnicalDetail, } from '../controllers/technicalDetailController';
 import { authenticateToken } from '../middlewares/authMiddleware';
@@ -45,9 +45,12 @@ router.delete('/user/remove-image', authenticateToken, removeUserImage); // Remo
  */
 
 router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, createTemplate); // Create a new template (with file upload)
+router.post('/draftemplate', authenticateToken, uploadFiles, multerErrorHandler, draftemplate); // Create a new template (with file upload)
+
 router.post('/templates/:id/download', templateDownloads); // record a download for a template
 router.get('/templates', getTemplates); // Get all templates by pagination
 router.get('/all-templates', getAllTemplates); // Get all templates by pagination
+router.get('/all-templatesdashboard', getAllTemplatesdashboard); // Get all templates by pagination
 router.get('/feature-templates', featureTemplates); // Get Feature Templates take 6 
 router.get('/templates/latest', getLatestTemplates); // Get Latest templates
 router.get('/templates/popular', getPopularTemplates); // Get Popular templates
@@ -71,6 +74,7 @@ router.delete('/template-types/:id', authenticateToken, deleteTemplateType); // 
 /**
  * Sub Categories routes
  */
+
 router.post('/sub-categories', authenticateToken, createSubCategory); // Create a subcategory
 router.get('/sub-categories', getSubCategories); // Get all subcategories
 router.get('/sub-categories/:id', getSubCategoryById); // Get a subcategory by Template ID
@@ -80,6 +84,7 @@ router.delete('/sub-categories/:id', authenticateToken, deleteSubCategory); // D
 /**
  * Software-types Route definitions
  */
+
 router.post('/software-types', authenticateToken, createSoftwareType); // Create a new software type
 router.get('/software-types', getSoftwareTypes); // Get all software types
 router.get('/software-types/:id', getSoftwareTypeById); // Get a software type by Template ID

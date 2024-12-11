@@ -27,28 +27,167 @@ interface AuthenticatedRequest extends Request {
  * - If the creation is successful, a `201 Created` status is returned with the newly created template data.
  * - In case of any errors, including validation errors or database issues, a `500 Internal Server Error` status is returned with an appropriate error message.
  */
+// export async function createTemplate(req: AuthenticatedRequest, res: Response) {
+//   try {
+//     // Parse and validate request data using DTO schema
+
+//     // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
+
+//     let creditqwqs = JSON.parse(req.body.credits)
+
+
+//     const {
+//       title, price, description, industry, templateTypeId,
+//       subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails, industryName, sourceFiles
+//     } = req.body;
+
+
+
+//     const userId = req.user?.id;
+
+//     // Validate required fields
+//     if (!title || !userId || !credits || !techDetails) {
+//       return res.status(400).json({ message: 'Title, user ID, SEO tags, credits, and tech details are required.' });
+//     }
+
+//     const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
+//       return Promise.all(files.map(file => uploadFileToFirebase(file, folder)));
+//     };
+
+//     // Initialize empty arrays for the uploaded URLs
+//     let sliderImageUrls: string[] = [];
+//     let previewImageUrls: string[] = [];
+//     let previewMobileImageUrls: string[] = [];
+//     // let sourceFileUrls: string[] = [];
+
+//     // Check if req.files is an array or an object with named fields
+//     if (Array.isArray(req.files)) {
+//       // If req.files is an array, you can't map the fields, so skip this step.
+
+//     } else if (req.files) {
+//       // If req.files is an object, handle each file type
+//       if (req.files.sliderImages) {
+//         sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
+//       }
+//       if (req.files.previewImages) {
+//         previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
+//       }
+//       if (req.files.previewMobileImages) {
+//         previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
+//       }
+//       // if (req.files.sourceFiles) {
+//       //   sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
+//       // }
+//     }
+
+
+//     // Create a new template
+//     const newTemplate = await prisma.template.create({
+//       data: {
+//         title,
+//         description,
+//         industryTypeId: industry,
+//         templateTypeId,
+//         softwareTypeId: softwareTypeId === "" ? null : softwareTypeId,
+//         subCategoryId,
+//         version,
+//         industryName: industryName,
+//         price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
+//         isPaid: (isPaid === "false" ? false : true),
+//         seoTags,
+//         userId,
+//         sourceFiles,
+//         credits: {
+//           create: creditqwqs.map((credit: any) => ({
+//             fonts: credit.fonts,
+//             images: credit.images,
+//             icons: credit.icons,
+//             illustrations: credit.illustrations,
+//           })),
+//         },
+//         techDetails,
+//       },
+//       include: {
+//         credits: true,
+//         sliderImages: true,
+//         previewImages: true,
+//         previewMobileImages: true,
+//       },
+//     });
+
+//     // Link images in the related tables
+//     await Promise.all([
+//       ...sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
+//       ...previewImageUrls.map(url => prisma.previewImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
+//       ...previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
+//       // ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
+//     ]);
+
+//     return res.status(201).json({ message: 'Template created successfully', template: newTemplate, });
+//   } catch (error: any) {
+//     if (error instanceof z.ZodError) {
+//       // Catch and handle validation errors
+//       return res.status(400).json({ message: 'Validation failed', errors: error.errors });
+//     }
+//     return res.status(500).json({ message: 'Failed to create template', error: error.message });
+//   }
+// }
 export async function createTemplate(req: AuthenticatedRequest, res: Response) {
+
   try {
     // Parse and validate request data using DTO schema
-    console.log("hererer", req.body);
     // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
 
-    let creditqwqs = JSON.parse(req.body.credits)
-
+    let creditqwqs = JSON.parse(req.body.credits);
 
     const {
       title, price, description, industry, templateTypeId,
-      subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails, industryName,sourceFiles
+      subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails, industryName, sourceFiles, status, metatitle, metadescription, slug
     } = req.body;
-
 
 
     const userId = req.user?.id;
 
     // Validate required fields
-    if (!title || !userId  || !credits || !techDetails) {
+    if (!title || !userId || !credits || !techDetails) {
       return res.status(400).json({ message: 'Title, user ID, SEO tags, credits, and tech details are required.' });
     }
+    if (!title) {
+      return res.status(400).json({ message: "Title is required." });
+    }
+
+    let checkTitle = title;
+    let result = checkTitle.includes("-");
+
+    if (!result) {
+      // No hyphen: Validate that the title is not empty
+      if (!title.trim()) {
+        return res.status(400).json({ message: "Title cannot be empty." });
+      }
+    } else {
+      // Hyphen present: Split the title and validate
+      const [titleText, titleInfo] = title.split("-").map((str: string) => str.trim());
+
+      if (!titleText || !titleInfo) {
+        return res.status(400).json({
+          message: "If a hyphen is included, both parts of the title must be valid.",
+        });
+      }
+    }
+
+    // Check for unique title
+    const existingTitle = await prisma.template.findUnique({
+      where: { title },
+    });
+
+    if (existingTitle) {
+      return res.status(400).json({ message: "The title must be unique. Please choose a different title." });
+    }
+
+    // Split title into `titleText` and `titleInfo`
+    const [titleText, titleInfo] = title.split('-').map((str: string) => str.trim());
+
+
 
     const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
       return Promise.all(files.map(file => uploadFileToFirebase(file, folder)));
@@ -63,7 +202,6 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     // Check if req.files is an array or an object with named fields
     if (Array.isArray(req.files)) {
       // If req.files is an array, you can't map the fields, so skip this step.
-      console.log("Files uploaded without named fields");
     } else if (req.files) {
       // If req.files is an object, handle each file type
       if (req.files.sliderImages) {
@@ -75,17 +213,13 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       if (req.files.previewMobileImages) {
         previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
       }
-      // if (req.files.sourceFiles) {
-      //   sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
-      // }
     }
-
-    console.log(softwareTypeId, "==softwareTypeId");
 
     // Create a new template
     const newTemplate = await prisma.template.create({
       data: {
-        title,
+        title: titleText,
+        titleinfo: titleInfo,
         description,
         industryTypeId: industry,
         templateTypeId,
@@ -95,6 +229,10 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         industryName: industryName,
         price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
         isPaid: (isPaid === "false" ? false : true),
+        metatitle,
+        metadescription,
+        slug,
+        isdraft: false,
         seoTags,
         userId,
         sourceFiles,
@@ -116,6 +254,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       },
     });
 
+
     // Link images in the related tables
     await Promise.all([
       ...sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
@@ -124,7 +263,10 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       // ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
     ]);
 
-    return res.status(201).json({ message: 'Template created successfully', template: newTemplate, });
+    return res.status(201).json({
+      message: 'Template created successfully',
+      template: newTemplate,
+    });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       // Catch and handle validation errors
@@ -253,7 +395,6 @@ export async function getTemplates(req: Request, res: Response) {
 
       const priceConditions = ranges.map((range: string) => {
         const [minPrice, maxPrice] = range.split('-').map((p) => parseFloat(p));
-        console.log(minPrice, maxPrice, "minPrice, maxPrice");
 
         // Handle "200-more" condition explicitly
         if (isNaN(maxPrice)) {
@@ -374,19 +515,21 @@ export async function getTemplates(req: Request, res: Response) {
  * - If the query is successful, a `200 OK` response is returned with the fetched templates and a success message.
  * - If an error occurs while fetching the templates, a `500 Internal Server Error` response is returned with an error message.
  */
+
 export const getAllTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
-      // include:{
-      //   templateType:true
-      // }
       select: {
         title: true,
         version: true,
         price: true,
         // templateTypeId:true,
         templateType: true,
-        id: true
+        id: true,
+        slug: true,
+        metatitle: true,
+        metadescription: true,
+        isdraft: false
       },
       orderBy: {
         createdAt: 'desc',
@@ -418,14 +561,13 @@ export const getAllTemplates = async (req: Request, res: Response) => {
  */
 export const featureTemplates = async (req: Request, res: Response) => {
   try {
-    console.log("here");
-
     const featureTemplates = await prisma.template.findMany({
       select: {
         sliderImages: true,
         title: true,
         version: true,
         price: true,
+        slug: true,
         templateType: true,
         id: true,
         softwareType: true,
@@ -441,7 +583,9 @@ export const featureTemplates = async (req: Request, res: Response) => {
         createdAt: 'desc',
       },
       take: 6  // Limit to 6 templates
-    });
+    }
+
+    );
 
     return res.json({ results: { templates: featureTemplates } });
   } catch (error) {
@@ -720,8 +864,7 @@ export async function getTemplateByTitle(req: Request, res: Response) {
   const query = typeof req.query.query === 'string' ? req.query.query : undefined;
   const subCategoryId = typeof req.query.subCategoryId === 'string' ? req.query.subCategoryId : undefined;
 
-  console.log(query,"==query");
-  
+
 
   try {
     const results = await prisma.template.findMany({
@@ -729,11 +872,11 @@ export async function getTemplateByTitle(req: Request, res: Response) {
         AND: [
           query
             ? {
-                OR: [
-                  { title: { contains: query} }, // Search in title
-                  { seoTags: { array_contains: query } }, // Search in seoTags
-                ],
-              }
+              OR: [
+                { title: { contains: query } }, // Search in title
+                { seoTags: { array_contains: query } }, // Search in seoTags
+              ],
+            }
             : {}, // If no query, ignore this filter
           subCategoryId ? { subCategoryId } : {}, // Apply subCategoryId filter if valid
         ],
@@ -744,8 +887,8 @@ export async function getTemplateByTitle(req: Request, res: Response) {
         description: true,
         imageUrl: true,
         price: true,
-        version:true,
-        templateType:true
+        version: true,
+        templateType: true
       },
     });
 
@@ -755,7 +898,6 @@ export async function getTemplateByTitle(req: Request, res: Response) {
     res.status(500).json({ message: 'Error searching templates' });
   }
 }
-
 
 
 /**
@@ -782,6 +924,7 @@ export async function getTemplateByTitle(req: Request, res: Response) {
 
 export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
+
 
 
   // Parse the credits JSON in request body
@@ -814,8 +957,51 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
 
     const {
       title, price, description, industry, templateTypeId,
-      softwareTypeId, version, isPaid, seoTags, techDetails,sourceFiles,industryName
+      softwareTypeId, version, isPaid, seoTags, techDetails, sourceFiles, industryName, metadescription, metatitle, slug
     } = req.body;
+
+
+
+
+
+    // title 
+    if (!title) {
+      return res.status(400).json({ message: "Title is required." });
+    }
+
+    let checkTitle = title;
+    let result2 = checkTitle.includes("-");
+
+    if (!result2) {
+      // No hyphen: Validate that the title is not empty
+      if (!title.trim()) {
+        return res.status(400).json({ message: "Title cannot be empty." });
+      }
+    } else {
+      // Hyphen present: Split the title and validate
+      const [titleText, titleInfo] = title.split("-").map((str: string) => str.trim());
+
+      if (!titleText || !titleInfo) {
+        return res.status(400).json({
+          message: "If a hyphen is included, both parts of the title must be valid.",
+        });
+      }
+    }
+
+    // Check for unique title
+    const existingTitle = await prisma.template.findUnique({
+      where: { title },
+    });
+
+    if (existingTitle) {
+      return res.status(400).json({ message: "The title must be unique. Please choose a different title." });
+    }
+
+
+    // Split title into `titleText` and `titleInfo`
+    const [titleText, titleInfo] = title.split('-').map((str: string) => str.trim());
+
+    // title 
 
     // Function to handle file uploads
     const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
@@ -829,9 +1015,9 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
     // let sourceFileUrls: string[] = [];
 
 
+
     // Check if req.files is an array or an object with named fields
     if (Array.isArray(req.files)) {
-      console.log("Files uploaded without named fields");
     } else if (req.files) {
       if (req.files.sliderImages) {
         sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
@@ -847,8 +1033,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       // }
     }
 
-    console.log(industryName,"==industryName");
-    
+
 
     const result = await prisma.$transaction(async (prisma) => {
 
@@ -856,7 +1041,8 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       const updatedTemplate = await prisma.template.update({
         where: { id },
         data: {
-          title,
+          title: titleText,
+          titleinfo: titleInfo,
           description,
           industryTypeId: industry,
           industryName,
@@ -866,6 +1052,10 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
           price: (price !== "undefined" && isPaid === "true") ? Number(price) : 0,
           isPaid: isPaid === "true",
           seoTags,
+          isdraft: false,
+          metatitle,
+          metadescription,
+          slug,
           techDetails,
           sourceFiles,
           credits: {
@@ -915,3 +1105,173 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
     return res.status(500).json({ message: 'Failed to update template', error: error.message });
   }
 }
+
+
+// draftemplatedraftemplate draftemplate draftemplate draftemplate 
+// draftemplatedraftemplate draftemplate draftemplate draftemplate 
+
+export async function draftemplate(req: AuthenticatedRequest, res: Response) {
+  try {
+    // Parse and validate request data using DTO schema
+    // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
+
+    let creditqwqs = JSON.parse(req.body.credits);
+
+    const {
+      title, price, description, industry, templateTypeId,
+      subCategoryId, softwareTypeId, version, isPaid, seoTags, techDetails, industryName, sourceFiles, status, metatitle, metadescription, slug,
+    } = req.body;
+
+    const userId = req.user?.id;
+
+    let checkTitle = title;
+    let result = checkTitle.includes("-");
+
+    if (!result) {
+    } else {
+      // Hyphen present: Split the title and validate
+      const [titleText, titleInfo] = title.split("-").map((str: string) => str.trim());
+
+      if (!titleText || !titleInfo) {
+        return res.status(400).json({
+          message: "If a hyphen is included, both parts of the title must be valid.",
+        });
+      }
+    }
+
+    // Split title into `titleText` and `titleInfo`
+    const [titleText, titleInfo] = title.split('-').map((str: string) => str.trim());
+
+    const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
+      return Promise.all(files.map(file => uploadFileToFirebase(file, folder)));
+    };
+
+    // Initialize empty arrays for the uploaded URLs
+    let sliderImageUrls: string[] = [];
+    let previewImageUrls: string[] = [];
+    let previewMobileImageUrls: string[] = [];
+    // let sourceFileUrls: string[] = [];
+
+    // Check if req.files is an array or an object with named fields
+    if (Array.isArray(req.files)) {
+      // If req.files is an array, you can't map the fields, so skip this step.
+    } else if (req.files) {
+      // If req.files is an object, handle each file type
+      if (req.files.sliderImages) {
+        sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
+      }
+      if (req.files.previewImages) {
+        previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
+      }
+      if (req.files.previewMobileImages) {
+        previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
+      }
+    }
+
+
+    // Create a new template
+    const newTemplate = await prisma.template.create({
+      data: {
+        title: titleText || "",
+        titleinfo: titleInfo || "",
+        description: description || "",
+        industryTypeId: industry || "",
+        templateTypeId: templateTypeId || "",
+        softwareTypeId: softwareTypeId || "",
+        subCategoryId: subCategoryId || "",
+        version: version || "",
+        industryName: industryName || "",
+        price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
+        isPaid: (isPaid === "false" ? false : true),
+        metatitle: metatitle || "",
+        metadescription: metadescription || "",
+        slug: slug || "",
+        isdraft: true,
+        seoTags: seoTags
+          || [],
+        userId: userId || "",
+        sourceFiles: sourceFiles || "",
+        credits: {
+          create: creditqwqs.map((credit: any) => ({
+            fonts: credit.fonts,
+            images: credit.images,
+            icons: credit.icons,
+            illustrations: credit.illustrations,
+          })),
+        },
+        techDetails,
+      },
+      include: {
+        credits: true,
+        sliderImages: true,
+        previewImages: true,
+        previewMobileImages: true,
+      },
+
+    });
+
+    // Link images in the related tables
+    await Promise.all([
+      ...sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
+      ...previewImageUrls.map(url => prisma.previewImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
+      ...previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
+    ]);
+
+    return res.status(201).json({
+      message: 'save draft successfully',
+      template: newTemplate,
+    });
+
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      // Catch and handle validation errors
+      return res.status(400).json({ message: 'Validation failed', errors: error.errors });
+    }
+    return res.status(500).json({ message: 'Failed to draft template', error: error.message });
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
+  try {
+    const latestTemplates = await prisma.template.findMany({
+      select: {
+        title: true,
+        version: true,
+        price: true,
+        // templateTypeId:true,
+        templateType: true,
+        id: true,
+        slug: true,
+        metatitle: true,
+        metadescription: true,
+        isdraft: true
+      },
+      orderBy: {
+        createdAt: 'desc',
+      }
+    });
+
+    return res.json({ results: { templates: latestTemplates } });
+  } catch (error) {
+    console.error("Error fetching latest templates:", error);
+    return res.status(500).json({ message: "Failed to fetch latest templates", error });
+  }
+};

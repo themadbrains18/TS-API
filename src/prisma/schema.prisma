@@ -13,19 +13,21 @@ enum Role {
 }
 
 model User {
-  id              String            @id @default(cuid())
-  email           String            @unique
-  name            String?
-  password        String
-  token           String?
-  profileImg      String?           @db.VarChar(2048)
-  number          String?
-  freeDownloads   Int               @default(3)
-  downloadHistory DownloadHistory[] @relation("UserDownloadHistory")
-  role            Role              @default(USER)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  templates       Template[]        @relation("UserTemplates")
+  id                 String            @id @default(cuid())
+  email              String            @unique
+  name               String?
+  password           String
+  token              String?
+  profileImg         String?           @db.VarChar(2048)
+  number             String?
+  freeDownloads      Int               @default(3)
+  downloadHistory    DownloadHistory[] @relation("UserDownloadHistory")
+  role               Role              @default(USER)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  templates          Template[]        @relation("UserTemplates")
+  authortitle        String?
+  authordesscription String?
 }
 
 model Otp {
@@ -36,43 +38,43 @@ model Otp {
 }
 
 model Template {
-  id          String   @id @default(cuid())
-  title       String
-  price       Float    @default(0)
-  description String?  @db.Text
-  imageUrl    String?
-  version     String?
-  userId      String
-  downloads   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User?    @relation("UserTemplates", fields: [userId], references: [id], onDelete: Cascade)
-
-  industries     IndustryType? @relation(fields: [industryTypeId], references: [id], onDelete: Cascade)
-  industryTypeId String?
-  industryName   String?
-  templateType   TemplateType? @relation(fields: [templateTypeId], references: [id], onDelete: Cascade)
-  templateTypeId String?
-
-  subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
-  subCategoryId String?
-
-  softwareType   SoftwareType? @relation(fields: [softwareTypeId], references: [id], onDelete: Cascade)
-  softwareTypeId String?
-
-  mobileVersion      Boolean?
-  documentationReady Boolean?
-
+  id                  String               @id @default(cuid())
+  title               String?              @unique
+  titleinfo           String?
+  price               Float                @default(0)
+  description         String?              @db.Text
+  imageUrl            String?
+  version             String?
+  userId              String
+  downloads           Int                  @default(0)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @default(now())
+  user                User?                @relation("UserTemplates", fields: [userId], references: [id], onDelete: Cascade)
+  industries          IndustryType?        @relation(fields: [industryTypeId], references: [id], onDelete: Cascade)
+  industryTypeId      String?
+  industryName        String?
+  templateType        TemplateType?        @relation(fields: [templateTypeId], references: [id], onDelete: Cascade)
+  templateTypeId      String?
+  subCategory         SubCategory?         @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  subCategoryId       String?
+  softwareType        SoftwareType?        @relation(fields: [softwareTypeId], references: [id], onDelete: Cascade)
+  softwareTypeId      String?
+  mobileVersion       Boolean?
+  documentationReady  Boolean?
   credits             Credit[]             @relation("TemplateCredits")
   techDetails         Json?
-  sourceFiles         String?                @db.VarChar(2048)
+  sourceFiles         String?              @db.VarChar(2048)
   sliderImages        SliderImage[]        @relation("TemplateSliderImages")
   previewImages       PreviewImage[]       @relation("TemplatePreviewImages")
   previewMobileImages PreviewMobileImage[] @relation("TemplatePreviewMobileImages")
+  metatitle           String?
+  metadescription     String?
+  slug                String?
 
-  seoTags         Json
+  seoTags         Json?
   isPaid          Boolean           @default(false)
   downloadHistory DownloadHistory[] @relation("TemplateDownloadHistory")
+  isdraft         Boolean           @default(false)
 }
 
 model Credit {
@@ -160,8 +162,8 @@ model IndustryType {
   id        String     @id @default(cuid())
   name      String     @unique
   templates Template[]
-    createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt @default(now())
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @default(now()) @updatedAt
 }
 
 // model Template {

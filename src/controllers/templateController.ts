@@ -869,8 +869,6 @@ export async function getTemplateByTitle(req: Request, res: Response) {
   const query = typeof req.query.query === 'string' ? req.query.query : undefined;
   const subCategoryId = typeof req.query.subCategoryId === 'string' ? req.query.subCategoryId : undefined;
 
-
-
   try {
     const results = await prisma.template.findMany({
       where: {
@@ -1267,5 +1265,57 @@ export async function draftemplate(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ message: 'Validation failed', errors: error.errors });
     }
     return res.status(500).json({ message: 'Failed to save template', error: error.message });
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//  draft search template 
+export async function getTemplateByTitledraft(req: Request, res: Response) {
+  const query = typeof req.query.query === 'string' ? req.query.query : undefined;
+  const subCategoryId = typeof req.query.subCategoryId === 'string' ? req.query.subCategoryId : undefined;
+
+  try {
+    const results = await prisma.template.findMany({
+      where: {
+        AND: [
+          query
+            ? {
+              OR: [
+                { title: { contains: query } }, // Search in title
+                { seoTags: { array_contains: query } }, // Search in seoTags
+              ],
+            }
+            : {}, // If no query, ignore this filter
+          subCategoryId ? { subCategoryId } : {}, // Apply subCategoryId filter if valid
+        ],
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        imageUrl: true,
+        price: true,
+        version: true,
+        templateType: true,
+        isdraft : true
+      },
+    });
+
+    res.status(200).json({ templates: results });
+  } catch (error) {
+    console.error('Search API error:', error);
+    res.status(500).json({ message: 'Error searching templates' });
   }
 }

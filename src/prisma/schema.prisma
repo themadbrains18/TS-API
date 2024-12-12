@@ -39,11 +39,9 @@ model Otp {
 }
 
 model Template {
-  id String @id @default(cuid())
-
-  title     String? @db.VarChar(1000)
-  titleinfo String? @db.VarChar(1000)
-
+  id                  String               @id @default(cuid())
+  title               String?              @db.VarChar(1000)
+  titleinfo           String?              @db.VarChar(1000)
   price               Float                @default(0)
   description         String?              @db.Text
   imageUrl            String?

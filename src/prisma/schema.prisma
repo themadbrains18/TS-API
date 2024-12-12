@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   ADMIN
   USER
+  AUTHOR
 }
 
 model User {
@@ -26,8 +27,8 @@ model User {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   templates          Template[]        @relation("UserTemplates")
-  authortitle        String?
-  authordesscription String?
+  authortitle        String?           @db.VarChar(2000)
+  authordesscription String?           @db.VarChar(2000)
 }
 
 model Otp {
@@ -38,9 +39,11 @@ model Otp {
 }
 
 model Template {
-  id                  String               @id @default(cuid())
-  title               String?              @unique
-  titleinfo           String?
+  id String @id @default(cuid())
+
+  title     String? @db.VarChar(1000)
+  titleinfo String? @db.VarChar(1000)
+
   price               Float                @default(0)
   description         String?              @db.Text
   imageUrl            String?
@@ -70,11 +73,10 @@ model Template {
   metatitle           String?
   metadescription     String?
   slug                String?
-
-  seoTags         Json?
-  isPaid          Boolean           @default(false)
-  downloadHistory DownloadHistory[] @relation("TemplateDownloadHistory")
-  isdraft         Boolean           @default(false)
+  seoTags             Json?
+  isPaid              Boolean              @default(false)
+  downloadHistory     DownloadHistory[]    @relation("TemplateDownloadHistory")
+  isdraft             Boolean              @default(false)
 }
 
 model Credit {

@@ -141,10 +141,28 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     let creditqwqs = JSON.parse(req.body.credits);
 
     const {
-      title, price, description, industry, templateTypeId,
+      title, titleinfo, price, description, industry, templateTypeId,
       subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails, industryName, sourceFiles, status, metatitle, metadescription, slug
     } = req.body;
 
+    // Check if the title is unique using findMany
+    const existingTitle = await prisma.template.findMany({
+      where: { title: title || "" },
+    });
+
+    if (existingTitle.length > 0) {
+      return res.status(400).json({ message: "Title must be unique." });
+    }
+
+
+    // Check if the title is unique using findMany
+    const existingslug = await prisma.template.findMany({
+      where: { slug: slug || "" },
+    });
+
+    if (existingslug.length > 0) {
+      return res.status(400).json({ message: "slug must be unique." });
+    }
 
     const userId = req.user?.id;
 
@@ -155,37 +173,6 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     if (!title) {
       return res.status(400).json({ message: "Title is required." });
     }
-
-    let checkTitle = title;
-    let result = checkTitle.includes("-");
-
-    if (!result) {
-      // No hyphen: Validate that the title is not empty
-      if (!title.trim()) {
-        return res.status(400).json({ message: "Title cannot be empty." });
-      }
-    } else {
-      // Hyphen present: Split the title and validate
-      const [titleText, titleInfo] = title.split("-").map((str: string) => str.trim());
-
-      if (!titleText || !titleInfo) {
-        return res.status(400).json({
-          message: "If a hyphen is included, both parts of the title must be valid.",
-        });
-      }
-    }
-
-    // Check for unique title
-    const existingTitle = await prisma.template.findUnique({
-      where: { title },
-    });
-
-    if (existingTitle) {
-      return res.status(400).json({ message: "The title must be unique. Please choose a different title." });
-    }
-
-    // Split title into `titleText` and `titleInfo`
-    const [titleText, titleInfo] = title.split('-').map((str: string) => str.trim());
 
 
 
@@ -218,8 +205,8 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     // Create a new template
     const newTemplate = await prisma.template.create({
       data: {
-        title: titleText,
-        titleinfo: titleInfo,
+        title: title,
+        titleinfo: titleinfo,
         description,
         industryTypeId: industry,
         templateTypeId,
@@ -412,8 +399,6 @@ export async function getTemplates(req: Request, res: Response) {
 
     }
 
-
-
     // Handle search query
     if (search) {
       filters.title = { contains: search as string };
@@ -446,12 +431,14 @@ export async function getTemplates(req: Request, res: Response) {
     // Fetch templates with filters, pagination, and relations
     const [templates, totalTemplates] = await Promise.all([
       prisma.template.findMany({
+
         where: {
+          isdraft: false, // Ensure only non-draft templates are counted
           ...filters,
           ...(templateTypeId ? { templateTypeId: { in: handleArrayInput(templateTypeId) } } : {}),
           ...(subCatId ? subCategoryFilter : {}),
-
         },
+
         include: {
           credits: true,
           sliderImages: true,
@@ -475,6 +462,7 @@ export async function getTemplates(req: Request, res: Response) {
       }),
       prisma.template.count({
         where: {
+          isdraft: false, // Ensure only non-draft templates are counted
           ...filters,
           ...(templateTypeId ? { templateTypeId: { in: handleArrayInput(templateTypeId) } } : {}),
           ...(subCatId ? subCategoryFilter : {}),
@@ -519,6 +507,9 @@ export async function getTemplates(req: Request, res: Response) {
 export const getAllTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
+      where: {
+        isdraft: false
+      },
       select: {
         title: true,
         version: true,
@@ -529,7 +520,7 @@ export const getAllTemplates = async (req: Request, res: Response) => {
         slug: true,
         metatitle: true,
         metadescription: true,
-        isdraft: false
+
       },
       orderBy: {
         createdAt: 'desc',
@@ -562,6 +553,9 @@ export const getAllTemplates = async (req: Request, res: Response) => {
 export const featureTemplates = async (req: Request, res: Response) => {
   try {
     const featureTemplates = await prisma.template.findMany({
+      where: {
+        isdraft: false
+      },
       select: {
         sliderImages: true,
         title: true,
@@ -570,6 +564,7 @@ export const featureTemplates = async (req: Request, res: Response) => {
         slug: true,
         templateType: true,
         id: true,
+
         softwareType: true,
         user: {
           select: {
@@ -582,7 +577,8 @@ export const featureTemplates = async (req: Request, res: Response) => {
       orderBy: {
         createdAt: 'desc',
       },
-      take: 6  // Limit to 6 templates
+      take: 6,  // Limit to 6 templates
+
     }
 
     );
@@ -612,6 +608,9 @@ export const featureTemplates = async (req: Request, res: Response) => {
 export const getLatestTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
+      where: {
+        isdraft: false
+      },
       orderBy: {
         createdAt: 'desc',
       },
@@ -734,6 +733,9 @@ export const templateDownloads = async (req: Request, res: Response) => {
 export const getPopularTemplates = async (req: Request, res: Response) => {
   try {
     const popularTemplates = await prisma.template.findMany({
+      where: {
+        isdraft: false
+      },
       orderBy: {
         downloads: 'desc',
       },
@@ -826,7 +828,10 @@ export async function getTemplateById(req: Request, res: Response) {
         user: {
           select: {
             name: true,
-            id: true
+            id: true,
+            authortitle: true,
+            authordesscription: true
+
           }
         }
       },
@@ -869,6 +874,7 @@ export async function getTemplateByTitle(req: Request, res: Response) {
   try {
     const results = await prisma.template.findMany({
       where: {
+        isdraft: false,
         AND: [
           query
             ? {
@@ -926,10 +932,8 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
 
 
-
   // Parse the credits JSON in request body
   let creditData = JSON.parse(req.body.credits || '[]');
-
 
   try {
     // Start a transaction to ensure all updates are atomic
@@ -950,58 +954,43 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       throw new Error('Template not found.');
     }
 
+
+
+
     // Check user ownership
     // if (existingTemplate.userId !== req.user?.id) {
     //   throw new Error('You are not authorized to update this template.');
     // }
 
     const {
-      title, price, description, industry, templateTypeId,
+      title, titleinfo, price, description, industry, templateTypeId,
       softwareTypeId, version, isPaid, seoTags, techDetails, sourceFiles, industryName, metadescription, metatitle, slug
     } = req.body;
 
 
 
-
-
-    // title 
-    if (!title) {
-      return res.status(400).json({ message: "Title is required." });
-    }
-
-    let checkTitle = title;
-    let result2 = checkTitle.includes("-");
-
-    if (!result2) {
-      // No hyphen: Validate that the title is not empty
-      if (!title.trim()) {
-        return res.status(400).json({ message: "Title cannot be empty." });
-      }
-    } else {
-      // Hyphen present: Split the title and validate
-      const [titleText, titleInfo] = title.split("-").map((str: string) => str.trim());
-
-      if (!titleText || !titleInfo) {
-        return res.status(400).json({
-          message: "If a hyphen is included, both parts of the title must be valid.",
-        });
-      }
-    }
-
-    // Check for unique title
-    const existingTitle = await prisma.template.findUnique({
-      where: { title },
+    // Check if the title is unique using findMany
+    const existingTitle = await prisma.template.findMany({
+      where: { title: title || "" },
     });
 
-    if (existingTitle) {
-      return res.status(400).json({ message: "The title must be unique. Please choose a different title." });
+
+    if (existingTitle?.length > 0 && existingTemplate?.id !== existingTitle[0].id && existingTitle.length > 0) {
+      return res.status(400).json({ message: "Title must be unique." });
     }
 
 
-    // Split title into `titleText` and `titleInfo`
-    const [titleText, titleInfo] = title.split('-').map((str: string) => str.trim());
 
-    // title 
+
+    // Check if the title is unique using findMany
+    const existingslug = await prisma.template.findMany({
+      where: { slug: slug || "" },
+    });
+
+
+    if (existingslug?.length > 0 && existingTemplate?.id !== existingslug[0].id && existingslug.length > 0) {
+      return res.status(400).json({ message: "slug must be unique." });
+    }
 
     // Function to handle file uploads
     const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
@@ -1041,8 +1030,8 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       const updatedTemplate = await prisma.template.update({
         where: { id },
         data: {
-          title: titleText,
-          titleinfo: titleInfo,
+          title: title,
+          titleinfo: titleinfo,
           description,
           industryTypeId: industry,
           industryName,
@@ -1107,148 +1096,6 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
 }
 
 
-// draftemplatedraftemplate draftemplate draftemplate draftemplate 
-// draftemplatedraftemplate draftemplate draftemplate draftemplate 
-
-export async function draftemplate(req: AuthenticatedRequest, res: Response) {
-  try {
-    // Parse and validate request data using DTO schema
-    // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
-
-    let creditqwqs = JSON.parse(req.body.credits);
-
-    const {
-      title, price, description, industry, templateTypeId,
-      subCategoryId, softwareTypeId, version, isPaid, seoTags, techDetails, industryName, sourceFiles, status, metatitle, metadescription, slug,
-    } = req.body;
-
-    const userId = req.user?.id;
-
-    let checkTitle = title;
-    let result = checkTitle.includes("-");
-
-    if (!result) {
-    } else {
-      // Hyphen present: Split the title and validate
-      const [titleText, titleInfo] = title.split("-").map((str: string) => str.trim());
-
-      if (!titleText || !titleInfo) {
-        return res.status(400).json({
-          message: "If a hyphen is included, both parts of the title must be valid.",
-        });
-      }
-    }
-
-    // Split title into `titleText` and `titleInfo`
-    const [titleText, titleInfo] = title.split('-').map((str: string) => str.trim());
-
-    const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
-      return Promise.all(files.map(file => uploadFileToFirebase(file, folder)));
-    };
-
-    // Initialize empty arrays for the uploaded URLs
-    let sliderImageUrls: string[] = [];
-    let previewImageUrls: string[] = [];
-    let previewMobileImageUrls: string[] = [];
-    // let sourceFileUrls: string[] = [];
-
-    // Check if req.files is an array or an object with named fields
-    if (Array.isArray(req.files)) {
-      // If req.files is an array, you can't map the fields, so skip this step.
-    } else if (req.files) {
-      // If req.files is an object, handle each file type
-      if (req.files.sliderImages) {
-        sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
-      }
-      if (req.files.previewImages) {
-        previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
-      }
-      if (req.files.previewMobileImages) {
-        previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
-      }
-    }
-
-
-    // Create a new template
-    const newTemplate = await prisma.template.create({
-      data: {
-        title: titleText || "",
-        titleinfo: titleInfo || "",
-        description: description || "",
-        industryTypeId: industry || "",
-        templateTypeId: templateTypeId || "",
-        softwareTypeId: softwareTypeId || "",
-        subCategoryId: subCategoryId || "",
-        version: version || "",
-        industryName: industryName || "",
-        price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
-        isPaid: (isPaid === "false" ? false : true),
-        metatitle: metatitle || "",
-        metadescription: metadescription || "",
-        slug: slug || "",
-        isdraft: true,
-        seoTags: seoTags
-          || [],
-        userId: userId || "",
-        sourceFiles: sourceFiles || "",
-        credits: {
-          create: creditqwqs.map((credit: any) => ({
-            fonts: credit.fonts,
-            images: credit.images,
-            icons: credit.icons,
-            illustrations: credit.illustrations,
-          })),
-        },
-        techDetails,
-      },
-      include: {
-        credits: true,
-        sliderImages: true,
-        previewImages: true,
-        previewMobileImages: true,
-      },
-
-    });
-
-    // Link images in the related tables
-    await Promise.all([
-      ...sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
-      ...previewImageUrls.map(url => prisma.previewImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
-      ...previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
-    ]);
-
-    return res.status(201).json({
-      message: 'save draft successfully',
-      template: newTemplate,
-    });
-
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      // Catch and handle validation errors
-      return res.status(400).json({ message: 'Validation failed', errors: error.errors });
-    }
-    return res.status(500).json({ message: 'Failed to draft template', error: error.message });
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
@@ -1256,7 +1103,6 @@ export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
         title: true,
         version: true,
         price: true,
-        // templateTypeId:true,
         templateType: true,
         id: true,
         slug: true,
@@ -1275,3 +1121,151 @@ export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Failed to fetch latest templates", error });
   }
 };
+
+
+
+
+
+
+
+
+
+// draftemplatedraftemplate draftemplate draftemplate draftemplate 
+// draftemplatedraftemplate draftemplate draftemplate draftemplate 
+
+export async function draftemplate(req: AuthenticatedRequest, res: Response) {
+  try {
+    // Parse and validate request data if needed
+    const creditData = JSON.parse(req.body.credits);
+
+    const {
+      title, titleinfo, price, description, industry, templateTypeId,
+      subCategoryId, softwareTypeId, version, isPaid, seoTags, techDetails, industryName,
+      sourceFiles, metatitle, metadescription, slug,
+    } = req.body;
+
+    const userId = req.user?.id;
+
+    // Validate required fields
+    if (!industry || industry === "undefined") {
+      return res.status(400).json({ message: "Industry ID is required." });
+    }
+    if (!templateTypeId || templateTypeId === "undefined") {
+      return res.status(400).json({ message: "Template Type ID is required." });
+    }
+    if (!subCategoryId || subCategoryId === "undefined") {
+      return res.status(400).json({ message: "Subcategory ID is required." });
+    }
+    if (!softwareTypeId || softwareTypeId === "undefined") {
+      return res.status(400).json({ message: "Software Type ID is required." });
+    }
+
+    const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
+      return Promise.all(files.map(file => uploadFileToFirebase(file, folder)));
+    };
+
+    // Initialize empty arrays for uploaded URLs
+    let sliderImageUrls: string[] = [];
+    let previewImageUrls: string[] = [];
+    let previewMobileImageUrls: string[] = [];
+
+    // Check and upload files
+    if (!Array.isArray(req.files) && req.files) {
+      if (req.files.sliderImages) {
+        sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
+      }
+      if (req.files.previewImages) {
+        previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
+      }
+      if (req.files.previewMobileImages) {
+        previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
+      }
+    }
+
+    // Use upsert to handle both create and update
+    const template = await prisma.template.upsert({
+      where: { id: req.body.id || "" },
+      update: {
+        title,
+        titleinfo,
+        description,
+        industryTypeId: industry,
+        industryName,
+        templateTypeId,
+        softwareTypeId: (softwareTypeId === "" || softwareTypeId == "null") ? null : softwareTypeId,
+        version,
+        price: (price !== "undefined" && isPaid === "true") ? Number(price) : 0,
+        isPaid: isPaid === "true",
+        seoTags,
+        isdraft: true,
+        metatitle,
+        metadescription,
+        slug,
+        techDetails,
+        sourceFiles,
+        credits: {
+          updateMany: creditData.length > 0
+            ? creditData.map((credit: any, index: number) => ({
+              where: { id: credit.id },
+              data: {
+                fonts: credit.fonts,
+                images: credit.images,
+                icons: credit.icons,
+                illustrations: credit.illustrations,
+              },
+            }))
+            : undefined,
+        },
+      },
+      create: {
+        title: title || "",
+        titleinfo: titleinfo || "",
+        description: description || "",
+        industryTypeId: industry || "",
+        templateTypeId: templateTypeId || "",
+        softwareTypeId: softwareTypeId || "",
+        subCategoryId: subCategoryId || "",
+        version: version || "",
+        industryName: industryName || "",
+        price: (price !== "undefined" && isPaid === "true") ? Number(price) : 0,
+        isPaid: isPaid === "true",
+        metatitle: metatitle || "",
+        metadescription: metadescription || "",
+        slug: slug || "",
+        isdraft: true,
+        seoTags: seoTags || [],
+        userId: userId || "",
+        sourceFiles: sourceFiles !== "undefined" ? sourceFiles : "",
+        credits: {
+          create: creditData.map((credit: any) => ({
+            fonts: credit.fonts,
+            images: credit.images,
+            icons: credit.icons,
+            illustrations: credit.illustrations,
+          })),
+        },
+        techDetails: techDetails !== "null" ? techDetails : null,
+      },
+      include: {
+        credits: true,
+      },
+    });
+
+    // Link uploaded images to related tables
+    await Promise.all([
+      ...sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: template.id } })),
+      ...previewImageUrls.map(url => prisma.previewImage.create({ data: { imageUrl: url, templateId: template.id } })),
+      ...previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: template.id } })),
+    ]);
+
+    return res.status(201).json({
+      message: 'Template saved successfully.',
+      template,
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: 'Validation failed', errors: error.errors });
+    }
+    return res.status(500).json({ message: 'Failed to save template', error: error.message });
+  }
+}

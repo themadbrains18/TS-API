@@ -478,7 +478,10 @@ export async function checkUser(req: Request, res: Response) {
  * - Handles errors and sends appropriate responses if any step in the process fails.
  */
 export async function updateUserDetails(req: Request, res: Response) {
-  const { name, number, currentEmail, newEmail, otp } = req.body;
+  const { name, number, currentEmail, newEmail, otp, authortitle, authordesscription } = req.body;
+
+
+  console.log(authortitle, authordesscription, "=======authortitle, authordesscription")
 
   if (!req.user?.id) {
     return res.status(400).json({ message: "User ID is required" });
@@ -495,6 +498,8 @@ export async function updateUserDetails(req: Request, res: Response) {
     const updatedData: Partial<User> = {};
     if (name) updatedData.name = name;
     if (number) updatedData.number = number;
+    if (authortitle) updatedData.authortitle = authortitle
+    if (authordesscription) updatedData.authordesscription = authordesscription
 
     // Handle OTP verification and email update flow
     if (currentEmail && !otp) {
@@ -504,7 +509,7 @@ export async function updateUserDetails(req: Request, res: Response) {
         return res.status(404).json({ message: "Current email not found" });
       }
 
-      // Generate and send OTP to current email
+      // Generate and send OTP to current email 
       const otpCode = generateOtp();
       const expiresAt = otpExpiryTime();
       await prisma.otp.upsert({
@@ -556,6 +561,7 @@ export async function updateUserDetails(req: Request, res: Response) {
       // OTP verified for new email; update the user email
       updatedData.email = newEmail;
     }
+
 
     // Apply the updates
     const updatedUser = await prisma.user.update({

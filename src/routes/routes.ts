@@ -50,7 +50,6 @@ router.post('/draftemplate', authenticateToken, uploadFiles, multerErrorHandler,
 router.post('/templates/:id/download', templateDownloads); // record a download for a template
 router.get('/templates', getTemplates); // Get all templates by pagination
 router.get('/all-templates', getAllTemplates); // Get all templates by pagination
-router.get('/all-templatesdashboard', getAllTemplatesdashboard); // Get all templates by pagination
 router.get('/feature-templates', featureTemplates); // Get Feature Templates take 6 
 router.get('/templates/latest', getLatestTemplates); // Get Latest templates
 router.get('/templates/popular', getPopularTemplates); // Get Popular templates
@@ -60,6 +59,9 @@ router.get('/templates-by-id/:id', getTemplateById); // Get a specific template 
 router.get('/templates/search', getTemplateByTitle); // Get a specific template by ID
 router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken, updateTemplate); // Update a specific template by ID
 router.delete('/templates/:id', authenticateToken, deleteTemplate); // Delete a specific template by ID
+
+// dash board  
+router.get('/all-templatesdashboard', getAllTemplatesdashboard);
 
 /**
  * Template Type routes

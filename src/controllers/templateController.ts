@@ -27,122 +27,10 @@ interface AuthenticatedRequest extends Request {
  * - If the creation is successful, a `201 Created` status is returned with the newly created template data.
  * - In case of any errors, including validation errors or database issues, a `500 Internal Server Error` status is returned with an appropriate error message.
  */
-
-
-// export async function createTemplate(req: AuthenticatedRequest, res: Response) {
-//   try {
-//     // Parse and validate request data using DTO schema
-
-//     // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
-
-//     let creditqwqs = JSON.parse(req.body.credits)
-
-
-//     const {
-//       title, price, description, industry, templateTypeId,
-//       subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails, industryName, sourceFiles
-//     } = req.body;
-
-
-
-//     const userId = req.user?.id;
-
-//     // Validate required fields
-//     if (!title || !userId || !credits || !techDetails) {
-//       return res.status(400).json({ message: 'Title, user ID, SEO tags, credits, and tech details are required.' });
-//     }
-
-//     const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
-//       return Promise.all(files.map(file => uploadFileToFirebase(file, folder)));
-//     };
-
-//     // Initialize empty arrays for the uploaded URLs
-//     let sliderImageUrls: string[] = [];
-//     let previewImageUrls: string[] = [];
-//     let previewMobileImageUrls: string[] = [];
-//     // let sourceFileUrls: string[] = [];
-
-//     // Check if req.files is an array or an object with named fields
-//     if (Array.isArray(req.files)) {
-//       // If req.files is an array, you can't map the fields, so skip this step.
-
-//     } else if (req.files) {
-//       // If req.files is an object, handle each file type
-//       if (req.files.sliderImages) {
-//         sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
-//       }
-//       if (req.files.previewImages) {
-//         previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
-//       }
-//       if (req.files.previewMobileImages) {
-//         previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
-//       }
-//       // if (req.files.sourceFiles) {
-//       //   sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
-//       // }
-//     }
-
-
-//     // Create a new template
-//     const newTemplate = await prisma.template.create({
-//       data: {
-//         title,
-//         description,
-//         industryTypeId: industry,
-//         templateTypeId,
-//         softwareTypeId: softwareTypeId === "" ? null : softwareTypeId,
-//         subCategoryId,
-//         version,
-//         industryName: industryName,
-//         price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
-//         isPaid: (isPaid === "false" ? false : true),
-//         seoTags,
-//         userId,
-//         sourceFiles,
-//         credits: {
-//           create: creditqwqs.map((credit: any) => ({
-//             fonts: credit.fonts,
-//             images: credit.images,
-//             icons: credit.icons,
-//             illustrations: credit.illustrations,
-//           })),
-//         },
-//         techDetails,
-//       },
-//       include: {
-//         credits: true,
-//         sliderImages: true,
-//         previewImages: true,
-//         previewMobileImages: true,
-//       },
-//     });
-
-//     // Link images in the related tables
-//     await Promise.all([
-//       ...sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
-//       ...previewImageUrls.map(url => prisma.previewImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
-//       ...previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
-//       // ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
-//     ]);
-
-//     return res.status(201).json({ message: 'Template created successfully', template: newTemplate, });
-//   } catch (error: any) {
-//     if (error instanceof z.ZodError) {
-//       // Catch and handle validation errors
-//       return res.status(400).json({ message: 'Validation failed', errors: error.errors });
-//     }
-//     return res.status(500).json({ message: 'Failed to create template', error: error.message });
-//   }
-// }
-
-
 export async function createTemplate(req: AuthenticatedRequest, res: Response) {
-
   try {
     // Parse and validate request data using DTO schema
-    // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
-
-    let creditqwqs = JSON.parse(req.body.credits);
+    let creditqwqs = JSON.parse(req.body.credits)
 
     const {
       title, titleinfo, price, description, industry, templateTypeId,
@@ -167,6 +55,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     if (existingslug.length > 0) {
       return res.status(400).json({ message: "slug must be unique." });
     }
+
 
     const userId = req.user?.id;
 
@@ -193,6 +82,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     // Check if req.files is an array or an object with named fields
     if (Array.isArray(req.files)) {
       // If req.files is an array, you can't map the fields, so skip this step.
+      console.log("Files uploaded without named fields");
     } else if (req.files) {
       // If req.files is an object, handle each file type
       if (req.files.sliderImages) {
@@ -204,7 +94,12 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       if (req.files.previewMobileImages) {
         previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
       }
+      // if (req.files.sourceFiles) {
+      //   sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
+      // }
     }
+
+    console.log(softwareTypeId, "==softwareTypeId");
 
     // Create a new template
     const newTemplate = await prisma.template.create({
@@ -220,10 +115,6 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         industryName: industryName,
         price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
         isPaid: (isPaid === "false" ? false : true),
-        metatitle,
-        metadescription,
-        slug,
-        isdraft: false,
         seoTags,
         userId,
         sourceFiles,
@@ -245,7 +136,6 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       },
     });
 
-
     // Link images in the related tables
     await Promise.all([
       ...sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
@@ -254,10 +144,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       // ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
     ]);
 
-    return res.status(201).json({
-      message: 'Template created successfully',
-      template: newTemplate,
-    });
+    return res.status(201).json({ message: 'Template created successfully', template: newTemplate, });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       // Catch and handle validation errors
@@ -385,6 +272,7 @@ export async function getTemplates(req: Request, res: Response) {
 
       const priceConditions = ranges.map((range: string) => {
         const [minPrice, maxPrice] = range.split('-').map((p) => parseFloat(p));
+        console.log(minPrice, maxPrice, "minPrice, maxPrice");
 
         // Handle "200-more" condition explicitly
         if (isNaN(maxPrice)) {
@@ -505,7 +393,6 @@ export async function getTemplates(req: Request, res: Response) {
  * - If the query is successful, a `200 OK` response is returned with the fetched templates and a success message.
  * - If an error occurs while fetching the templates, a `500 Internal Server Error` response is returned with an error message.
  */
-
 export const getAllTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
@@ -554,6 +441,8 @@ export const getAllTemplates = async (req: Request, res: Response) => {
  */
 export const featureTemplates = async (req: Request, res: Response) => {
   try {
+    console.log("here");
+
     const featureTemplates = await prisma.template.findMany({
       where: {
         isdraft: false
@@ -563,7 +452,6 @@ export const featureTemplates = async (req: Request, res: Response) => {
         title: true,
         version: true,
         price: true,
-        slug: true,
         templateType: true,
         id: true,
 
@@ -945,6 +833,7 @@ export async function getTemplateByTitle(req: Request, res: Response) {
 }
 
 
+
 /**
  * Updates the details of a template, including its credits and associated files.
  * This operation ensures that only the owner of the template can update it and that 
@@ -1040,9 +929,9 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
     // let sourceFileUrls: string[] = [];
 
 
-
     // Check if req.files is an array or an object with named fields
     if (Array.isArray(req.files)) {
+      console.log("Files uploaded without named fields");
     } else if (req.files) {
       if (req.files.sliderImages) {
         sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
@@ -1058,6 +947,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       // }
     }
 
+    console.log(industryName, "==industryName");
 
 
     const result = await prisma.$transaction(async (prisma) => {
@@ -1077,10 +967,6 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
           price: (price !== "undefined" && isPaid === "true") ? Number(price) : 0,
           isPaid: isPaid === "true",
           seoTags,
-          isdraft: false,
-          metatitle,
-          metadescription,
-          slug,
           techDetails,
           sourceFiles,
           credits: {

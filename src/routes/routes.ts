@@ -45,8 +45,6 @@ router.delete('/user/remove-image', authenticateToken, removeUserImage); // Remo
  */
 
 router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, createTemplate); // Create a new template (with file upload)
-router.post('/draftemplate', authenticateToken, uploadFiles, multerErrorHandler, draftemplate); // Create a new template (with file upload)
-
 router.post('/templates/:id/download', templateDownloads); // record a download for a template
 router.get('/templates', getTemplates); // Get all templates by pagination
 router.get('/all-templates', getAllTemplates); // Get all templates by pagination
@@ -79,7 +77,6 @@ router.delete('/template-types/:id', authenticateToken, deleteTemplateType); // 
 /**
  * Sub Categories routes
  */
-
 router.post('/sub-categories', authenticateToken, createSubCategory); // Create a subcategory
 router.get('/sub-categories', getSubCategories); // Get all subcategories
 router.get('/sub-categories/:id', getSubCategoryById); // Get a subcategory by Template ID
@@ -89,7 +86,6 @@ router.delete('/sub-categories/:id', authenticateToken, deleteSubCategory); // D
 /**
  * Software-types Route definitions
  */
-
 router.post('/software-types', authenticateToken, createSoftwareType); // Create a new software type
 router.get('/software-types', getSoftwareTypes); // Get all software types
 router.get('/software-types/:id', getSoftwareTypeById); // Get a software type by Template ID

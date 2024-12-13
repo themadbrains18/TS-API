@@ -64,7 +64,7 @@ model Template {
   documentationReady  Boolean?
   credits             Credit[]             @relation("TemplateCredits")
   techDetails         Json?
-  sourceFiles         String?              @db.VarChar(2048)
+  sourceFiles         String?                @db.VarChar(2048)
   sliderImages        SliderImage[]        @relation("TemplateSliderImages")
   previewImages       PreviewImage[]       @relation("TemplatePreviewImages")
   previewMobileImages PreviewMobileImage[] @relation("TemplatePreviewMobileImages")
@@ -162,8 +162,8 @@ model IndustryType {
   id        String     @id @default(cuid())
   name      String     @unique
   templates Template[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @default(now()) @updatedAt
+    createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
 }
 
 // model Template {

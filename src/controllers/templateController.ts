@@ -457,6 +457,7 @@ export const featureTemplates = async (req: Request, res: Response) => {
         price: true,
         templateType: true,
         id: true,
+        slug: true,
         softwareType: true,
         user: {
           select: {

@@ -820,6 +820,7 @@ export async function getTemplateByTitle(req: Request, res: Response) {
       select: {
         id: true,
         title: true,
+        slug: true,
         description: true,
         imageUrl: true,
         price: true,

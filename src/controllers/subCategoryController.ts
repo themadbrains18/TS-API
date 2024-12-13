@@ -101,7 +101,6 @@ export const getSubCategoryById = async (req: Request, res: Response) => {
 };
 
 
-
 /**
  * Updates an existing subcategory by its ID.
  * 
@@ -114,6 +113,8 @@ export const getSubCategoryById = async (req: Request, res: Response) => {
  * - If the subcategory is successfully updated, a `200 OK` status is returned with the updated subcategory in the response body.
  * - If an error occurs during the update process, a `500 Internal Server Error` status is returned with an error message.
  */
+
+
 export const updateSubCategory = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { name, templateTypeId } = req.body;

@@ -481,7 +481,6 @@ export async function updateUserDetails(req: Request, res: Response) {
   const { name, number, currentEmail, newEmail, otp, authortitle, authordesscription } = req.body;
 
 
-  console.log(authortitle, authordesscription, "=======authortitle, authordesscription")
 
   if (!req.user?.id) {
     return res.status(400).json({ message: "User ID is required" });

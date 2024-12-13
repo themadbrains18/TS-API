@@ -27,6 +27,8 @@ interface AuthenticatedRequest extends Request {
  * - If the creation is successful, a `201 Created` status is returned with the newly created template data.
  * - In case of any errors, including validation errors or database issues, a `500 Internal Server Error` status is returned with an appropriate error message.
  */
+
+
 // export async function createTemplate(req: AuthenticatedRequest, res: Response) {
 //   try {
 //     // Parse and validate request data using DTO schema
@@ -132,6 +134,8 @@ interface AuthenticatedRequest extends Request {
 //     return res.status(500).json({ message: 'Failed to create template', error: error.message });
 //   }
 // }
+
+
 export async function createTemplate(req: AuthenticatedRequest, res: Response) {
 
   try {
@@ -279,7 +283,6 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
  */
 export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
-
 
   try {
     const template = await prisma.template.findUnique({ where: { id } });
@@ -487,7 +490,6 @@ export async function getTemplates(req: Request, res: Response) {
     return res.status(500).json({ message: 'Failed to fetch templates', error: error.message });
   }
 }
-
 
 
 /**
@@ -715,7 +717,6 @@ export const templateDownloads = async (req: Request, res: Response) => {
 };
 
 
-
 /**
  * Fetches the most popular templates based on the number of downloads.
  * 
@@ -755,8 +756,6 @@ export const getPopularTemplates = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Failed to fetch popular templates", error });
   }
 };
-
-
 
 
 /**
@@ -841,6 +840,48 @@ export async function getTemplateById(req: Request, res: Response) {
       throw new Error('Template not found.');
     }
 
+
+    return res.status(200).json(template);
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Failed to fetch template', error: error.message });
+  }
+}
+
+
+
+export async function getTemplateByslug(req: Request, res: Response) {
+  const { slug } = req.params;
+
+  console.log(slug, "slugslugslugslugslugslugslug==========================")
+
+  if (!slug) {
+    return res.status(400).json({ message: 'Slug is required.' });
+  }
+
+  try {
+    const template = await prisma.template.findFirst({
+      where: { slug },
+      include: {
+        credits: true,
+        sliderImages: true,
+        previewImages: true,
+        previewMobileImages: true,
+        softwareType: true,
+        user: {
+          select: {
+            name: true,
+            id: true,
+            authortitle: true,
+            authordesscription: true
+
+          }
+        }
+      },
+    });
+
+    if (!template) {
+      throw new Error('Template not found.');
+    }
 
     return res.status(200).json(template);
   } catch (error: any) {
@@ -952,9 +993,6 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       throw new Error('Template not found.');
     }
 
-
-
-
     // Check user ownership
     // if (existingTemplate.userId !== req.user?.id) {
     //   throw new Error('You are not authorized to update this template.');
@@ -1062,8 +1100,6 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
         include: { credits: true },
       });
 
-
-
       // Conditionally delete and recreate images if new ones are uploaded
       if (sliderImageUrls.length) {
 
@@ -1093,7 +1129,6 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
   }
 }
 
-
 export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
@@ -1120,15 +1155,6 @@ export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
   }
 };
 
-
-
-
-
-
-
-
-
-// draftemplatedraftemplate draftemplate draftemplate draftemplate 
 // draftemplatedraftemplate draftemplate draftemplate draftemplate 
 
 export async function draftemplate(req: AuthenticatedRequest, res: Response) {
@@ -1270,17 +1296,6 @@ export async function draftemplate(req: AuthenticatedRequest, res: Response) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 //  draft search template 
 export async function getTemplateByTitledraft(req: Request, res: Response) {
   const query = typeof req.query.query === 'string' ? req.query.query : undefined;
@@ -1309,7 +1324,7 @@ export async function getTemplateByTitledraft(req: Request, res: Response) {
         price: true,
         version: true,
         templateType: true,
-        isdraft : true
+        isdraft: true
       },
     });
 
@@ -1317,5 +1332,18 @@ export async function getTemplateByTitledraft(req: Request, res: Response) {
   } catch (error) {
     console.error('Search API error:', error);
     res.status(500).json({ message: 'Error searching templates' });
+  }
+}
+
+
+// delete all template 
+export async function deleteAllTemplate(req: AuthenticatedRequest, res: Response) {
+  try {
+    const template = await prisma.template.deleteMany();
+    res.status(200).json({
+      message: ' Delete All Template Successfully',
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Failed to delete all template', error: error.message });
   }
 }

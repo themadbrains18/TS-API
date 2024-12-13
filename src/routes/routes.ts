@@ -4,7 +4,7 @@ import { validateData } from '../middlewares/zodValidationMiddleware';
 import { userLoginSchema, userSignUpSchema } from '../dto/user.dto';
 
 import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser, updateUserDetails, updateUserImage, getUserDownloads, removeUserImage, deleteUser, getFreeDownload } from '../controllers/authController';
-import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, featureTemplates, getTemplateByTitle, } from '../controllers/templateController';
+import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, featureTemplates, getTemplateByTitle, draftemplate, getAllTemplatesdashboard, getTemplateByTitledraft, } from '../controllers/templateController';
 import { createCredit, getCredits, updateCredit, deleteCredit, } from '../controllers/creditController';
 // import { createTechnicalDetail, getTechnicalDetails, updateTechnicalDetail, deleteTechnicalDetail, } from '../controllers/technicalDetailController';
 import { authenticateToken } from '../middlewares/authMiddleware';
@@ -55,8 +55,12 @@ router.get('/dashboard/templates-by-userid', authenticateToken, getAllTemplatesB
 router.get('/templates-by-userid/:id', getAllTemplatesByUserId); // Get all templates by UserID
 router.get('/templates-by-id/:id', getTemplateById); // Get a specific template by ID
 router.get('/templates/search', getTemplateByTitle); // Get a specific template by ID
+router.get('/templateswithdraft/search', getTemplateByTitledraft);
 router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken, updateTemplate); // Update a specific template by ID
 router.delete('/templates/:id', authenticateToken, deleteTemplate); // Delete a specific template by ID
+
+// dash board  
+router.get('/all-templatesdashboard', getAllTemplatesdashboard);
 
 /**
  * Template Type routes

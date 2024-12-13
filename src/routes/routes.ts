@@ -25,6 +25,8 @@ const router = Router();
 /**
  * Authentication routes
  */
+
+
 router.post('/register', validateData(userSignUpSchema), register); // Register a new user with validation
 router.post('/login', validateData(userLoginSchema), login); // Log in an existing user with validation
 router.post('/verify-otp', verifyOtp); // Verify OTP for user authentication

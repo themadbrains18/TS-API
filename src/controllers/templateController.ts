@@ -117,6 +117,9 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         isPaid: (isPaid === "false" ? false : true),
         seoTags,
         userId,
+        slug,
+        metatitle,
+        metadescription,
         sourceFiles,
         credits: {
           create: creditqwqs.map((credit: any) => ({
@@ -454,7 +457,6 @@ export const featureTemplates = async (req: Request, res: Response) => {
         price: true,
         templateType: true,
         id: true,
-
         softwareType: true,
         user: {
           select: {

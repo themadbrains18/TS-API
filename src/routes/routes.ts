@@ -67,7 +67,7 @@ router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken,
 router.delete('/templates/:id', authenticateToken, deleteTemplate); // Delete a specific template by ID
 router.delete('/deletealltemplates/', authenticateToken, deleteAllTemplate); // Delete a specific template by ID
 
-router.post('/templatestatus/:id', updateActiveStatus); // change status template id active-inactive 
+router.post('/templatestatus/:id',  updateActiveStatus); // change status template id active-inactive 
 
 // dash board  
 router.get('/all-templatesdashboard', getAllTemplatesdashboard);

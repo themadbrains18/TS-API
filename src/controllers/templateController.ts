@@ -28,114 +28,6 @@ interface AuthenticatedRequest extends Request {
  * - In case of any errors, including validation errors or database issues, a `500 Internal Server Error` status is returned with an appropriate error message.
  */
 
-
-// export async function createTemplate(req: AuthenticatedRequest, res: Response) {
-//   try {
-//     // Parse and validate request data using DTO schema
-
-//     // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
-
-//     let creditqwqs = JSON.parse(req.body.credits)
-
-
-//     const {
-//       title, price, description, industry, templateTypeId,
-//       subCategoryId, softwareTypeId, version, isPaid, seoTags, credits, techDetails, industryName, sourceFiles
-//     } = req.body;
-
-
-
-//     const userId = req.user?.id;
-
-//     // Validate required fields
-//     if (!title || !userId || !credits || !techDetails) {
-//       return res.status(400).json({ message: 'Title, user ID, SEO tags, credits, and tech details are required.' });
-//     }
-
-//     const uploadFiles = async (files: Express.Multer.File[], folder: string): Promise<string[]> => {
-//       return Promise.all(files.map(file => uploadFileToFirebase(file, folder)));
-//     };
-
-//     // Initialize empty arrays for the uploaded URLs
-//     let sliderImageUrls: string[] = [];
-//     let previewImageUrls: string[] = [];
-//     let previewMobileImageUrls: string[] = [];
-//     // let sourceFileUrls: string[] = [];
-
-//     // Check if req.files is an array or an object with named fields
-//     if (Array.isArray(req.files)) {
-//       // If req.files is an array, you can't map the fields, so skip this step.
-
-//     } else if (req.files) {
-//       // If req.files is an object, handle each file type
-//       if (req.files.sliderImages) {
-//         sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
-//       }
-//       if (req.files.previewImages) {
-//         previewImageUrls = await uploadFiles(req.files.previewImages as Express.Multer.File[], 'previewImages');
-//       }
-//       if (req.files.previewMobileImages) {
-//         previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
-//       }
-//       // if (req.files.sourceFiles) {
-//       //   sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
-//       // }
-//     }
-
-
-//     // Create a new template
-//     const newTemplate = await prisma.template.create({
-//       data: {
-//         title,
-//         description,
-//         industryTypeId: industry,
-//         templateTypeId,
-//         softwareTypeId: softwareTypeId === "" ? null : softwareTypeId,
-//         subCategoryId,
-//         version,
-//         industryName: industryName,
-//         price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
-//         isPaid: (isPaid === "false" ? false : true),
-//         seoTags,
-//         userId,
-//         sourceFiles,
-//         credits: {
-//           create: creditqwqs.map((credit: any) => ({
-//             fonts: credit.fonts,
-//             images: credit.images,
-//             icons: credit.icons,
-//             illustrations: credit.illustrations,
-//           })),
-//         },
-//         techDetails,
-//       },
-//       include: {
-//         credits: true,
-//         sliderImages: true,
-//         previewImages: true,
-//         previewMobileImages: true,
-//       },
-//     });
-
-//     // Link images in the related tables
-//     await Promise.all([
-//       ...sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
-//       ...previewImageUrls.map(url => prisma.previewImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
-//       ...previewMobileImageUrls.map(url => prisma.previewMobileImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
-//       // ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
-//     ]);
-
-//     return res.status(201).json({ message: 'Template created successfully', template: newTemplate, });
-//   } catch (error: any) {
-//     if (error instanceof z.ZodError) {
-//       // Catch and handle validation errors
-//       return res.status(400).json({ message: 'Validation failed', errors: error.errors });
-//     }
-//     return res.status(500).json({ message: 'Failed to create template', error: error.message });
-//   }
-// }
-
-
 export async function createTemplate(req: AuthenticatedRequest, res: Response) {
 
   try {
@@ -908,6 +800,17 @@ export async function getTemplateById(req: Request, res: Response) {
 }
 
 
+/**
+ * Fetches a template from the database based on the provided slug.
+ *
+ * @async
+ * @function getTemplateByslug
+ * @param {Request} req - The HTTP request object, containing parameters including the slug.
+ * @param {Response} res - The HTTP response object for sending the result or error.
+ * @returns {Promise<Response>} The HTTP response with the fetched template or an error message.
+ *
+ * @throws {Error} Throws an error if the slug is missing or if the template is not found.
+ */
 
 export async function getTemplateByslug(req: Request, res: Response) {
   const { slug } = req.params;
@@ -1193,6 +1096,20 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
   }
 }
 
+
+
+/**
+ * Retrieves all templates from the database for the dashboard.
+ * 
+ * This function fetches templates in descending order of creation date and 
+ * includes specific fields such as title, version, price, template type, and more.
+ * 
+ * @async
+ * @function getAllTemplatesdashboard
+ * @param {Request} req - The HTTP request object.
+ * @param {Response} res - The HTTP response object.
+ * @returns {Promise<void>} Sends a JSON response containing the list of templates or an error message.
+ */
 export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
@@ -1220,7 +1137,20 @@ export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
   }
 };
 
-// draftemplatedraftemplate draftemplate draftemplate draftemplate 
+
+/**
+ * Handles the creation or update of a template draft.
+ * 
+ * This function processes the provided request data, validates required fields,
+ * uploads associated files (if any), and uses Prisma's `upsert` to create or update
+ * the template record in the database. It also links uploaded images to the relevant template.
+ * 
+ * @async
+ * @function draftemplate
+ * @param {AuthenticatedRequest} req - The authenticated HTTP request object containing template details and files.
+ * @param {Response} res - The HTTP response object to send the response.
+ * @returns {Promise<void>} Sends a JSON response indicating success or failure of the operation.
+ */
 
 export async function draftemplate(req: AuthenticatedRequest, res: Response) {
   try {
@@ -1360,8 +1290,19 @@ export async function draftemplate(req: AuthenticatedRequest, res: Response) {
 }
 
 
+/**
+ * Fetch templates by title or draft status based on query parameters.
+ *
+ * @param {Request} req - The HTTP request object. 
+ *    - `req.query.query` (string, optional): Search term for template titles or SEO tags.
+ *    - `req.query.subCategoryId` (string, optional): Filter templates by sub-category ID.
+ * @param {Response} res - The HTTP response object.
+ *
+ * @returns {Promise<void>} Sends a JSON response with the matched templates or an error message.
+ *
+ * @throws {Error} Returns a 500 status code if an error occurs during the database query.
+ */
 
-//  draft search template 
 export async function getTemplateByTitledraft(req: Request, res: Response) {
   const query = typeof req.query.query === 'string' ? req.query.query : undefined;
   const subCategoryId = typeof req.query.subCategoryId === 'string' ? req.query.subCategoryId : undefined;
@@ -1401,7 +1342,23 @@ export async function getTemplateByTitledraft(req: Request, res: Response) {
 }
 
 
-// delete all template 
+/**
+ * Deletes all templates from the database.
+ *
+ * @async
+ * @function deleteAllTemplate
+ * @param {AuthenticatedRequest} req - The authenticated HTTP request object. No additional parameters are required.
+ * @param {Response} res - The HTTP response object used to send the result or an error message.
+ * @returns {Promise<Response>} The HTTP response confirming the deletion of all templates or an error message.
+ *
+ * @description
+ * This function removes all entries in the `template` table using Prisma's `deleteMany` method.
+ * If successful, it returns a success message with a 200 status code.
+ * If the operation fails, an error is logged, and a 500 status code is returned.
+ *
+ * @throws {Error} Logs the error and returns a 500 response if the operation fails.
+ */
+
 export async function deleteAllTemplate(req: AuthenticatedRequest, res: Response) {
   try {
     const template = await prisma.template.deleteMany();
@@ -1414,8 +1371,19 @@ export async function deleteAllTemplate(req: AuthenticatedRequest, res: Response
 }
 
 
-// update active status 
-export const updateActiveStatus = async (req: AuthenticatedRequest, res: Response) => {
+  
+/**
+ * Update the active status of a template.
+ *
+ * @param {AuthenticatedRequest} req - The authenticated HTTP request object.
+ *    - `req.params.id` (string): The ID of the template to update.
+ *    - `req.body.active` (boolean): The new active status for the template.
+ * @param {Response} res - The HTTP response object.
+ *
+ * @returns {Promise<void>} Sends a JSON response with the updated template or an error message.
+ *
+ * @throws {Error} Returns a 500 status code if an error occurs during the database operation.
+ */export const updateActiveStatus = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params; // Get the template ID from route parameters
     const { active } = req.body; // Get the new active status from the request body

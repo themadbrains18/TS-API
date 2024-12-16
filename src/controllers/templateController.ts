@@ -436,7 +436,15 @@ export async function getTemplates(req: Request, res: Response) {
       prisma.template.findMany({
 
         where: {
-          isdraft: false, // Ensure only non-draft templates are counted
+          // isdraft: false, // Ensure only non-draft templates are counted
+          AND: [
+            {
+              isdraft: false
+            },
+            {
+              active: true
+            }
+          ],
           ...filters,
           ...(templateTypeId ? { templateTypeId: { in: handleArrayInput(templateTypeId) } } : {}),
           ...(subCatId ? subCategoryFilter : {}),
@@ -465,7 +473,16 @@ export async function getTemplates(req: Request, res: Response) {
       }),
       prisma.template.count({
         where: {
-          isdraft: false, // Ensure only non-draft templates are counted
+          // isdraft: false, // Ensure only non-draft templates are counted
+
+          AND: [
+            {
+              isdraft: false
+            },
+            {
+              active: true
+            }
+          ],
           ...filters,
           ...(templateTypeId ? { templateTypeId: { in: handleArrayInput(templateTypeId) } } : {}),
           ...(subCatId ? subCategoryFilter : {}),
@@ -509,9 +526,31 @@ export async function getTemplates(req: Request, res: Response) {
 export const getAllTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
+      // where: {
+      //   isdraft: false
+      // },
       where: {
-        isdraft: false
+        AND: [
+          {
+            isdraft: false
+          },
+          {
+            active: true
+          }
+        ]
       },
+
+      // OR: [
+      //   {
+      //     email: {
+      //       endsWith: 'prisma.io',
+      //     },
+      //   },
+      //   { email: { endsWith: 'gmail.com' } },
+      // ],
+
+
+
       select: {
         title: true,
         version: true,
@@ -556,7 +595,14 @@ export const featureTemplates = async (req: Request, res: Response) => {
   try {
     const featureTemplates = await prisma.template.findMany({
       where: {
-        isdraft: false
+        AND: [
+          {
+            isdraft: false
+          },
+          {
+            active: true
+          }
+        ]
       },
       select: {
         sliderImages: true,
@@ -611,7 +657,14 @@ export const getLatestTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
       where: {
-        isdraft: false
+        AND: [
+          {
+            isdraft: false
+          },
+          {
+            active: true
+          }
+        ]
       },
       orderBy: {
         createdAt: 'desc',
@@ -735,7 +788,14 @@ export const getPopularTemplates = async (req: Request, res: Response) => {
   try {
     const popularTemplates = await prisma.template.findMany({
       where: {
-        isdraft: false
+        AND: [
+          {
+            isdraft: false
+          },
+          {
+            active: true
+          }
+        ]
       },
       orderBy: {
         downloads: 'desc',
@@ -852,8 +912,6 @@ export async function getTemplateById(req: Request, res: Response) {
 export async function getTemplateByslug(req: Request, res: Response) {
   const { slug } = req.params;
 
-  console.log(slug, "slugslugslugslugslugslugslug==========================")
-
   if (!slug) {
     return res.status(400).json({ message: 'Slug is required.' });
   }
@@ -913,8 +971,13 @@ export async function getTemplateByTitle(req: Request, res: Response) {
   try {
     const results = await prisma.template.findMany({
       where: {
-        isdraft: false,
         AND: [
+          {
+            isdraft: false
+          },
+          {
+            active: true
+          },
           query
             ? {
               OR: [
@@ -1142,7 +1205,8 @@ export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
         slug: true,
         metatitle: true,
         metadescription: true,
-        isdraft: true
+        isdraft: true,
+        active: true
       },
       orderBy: {
         createdAt: 'desc',
@@ -1348,3 +1412,36 @@ export async function deleteAllTemplate(req: AuthenticatedRequest, res: Response
     return res.status(500).json({ message: 'Failed to delete all template', error: error.message });
   }
 }
+
+
+// update active status 
+export const updateActiveStatus = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params; // Get the template ID from route parameters
+    const { active } = req.body; // Get the new active status from the request body
+
+    // Check if the template exists
+    const template = await prisma.template.findUnique({
+      where: { id },
+    });
+
+    if (!template) {
+      return res.status(404).json({ message: 'Template not found' });
+    }
+
+    // Update the active status
+    const updatedTemplate = await prisma.template.update({
+      where: { id },
+      data: { active: active },
+    });
+
+    return res.status(200).json({
+      message: 'Template active status updated successfully',
+      template: updatedTemplate,
+    });
+
+  } catch (error) {
+    console.error('Error updating active status:', error);
+    return res.status(500).json({ message: 'Internal server error', error });
+  }
+};

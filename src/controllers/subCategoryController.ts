@@ -25,7 +25,7 @@ export const createSubCategory = async (req: Request, res: Response) => {
         templateTypeId,
       },
     });
-    return res.status(201).json({results:newSubCategory});
+    return res.status(201).json({ results: newSubCategory });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Failed to create subcategory", error });
@@ -48,7 +48,7 @@ export const createSubCategory = async (req: Request, res: Response) => {
 export const getSubCategories = async (req: Request, res: Response) => {
   try {
     const subCategories = await prisma.subCategory.findMany();
-    return res.status(200).json({results:subCategories});
+    return res.status(200).json({ results: subCategories });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Failed to retrieve subcategories", error });
@@ -72,7 +72,6 @@ export const getSubCategories = async (req: Request, res: Response) => {
  */
 export const getSubCategoryById = async (req: Request, res: Response) => {
   const { id } = req.params;
-
   try {
     const subCategories = await prisma.subCategory.findMany({
       where: { templateTypeId: id },
@@ -127,7 +126,7 @@ export const updateSubCategory = async (req: Request, res: Response) => {
         templateTypeId,
       },
     });
-    return res.status(200).json({results:updatedSubCategory});
+    return res.status(200).json({ results: updatedSubCategory });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Failed to update subcategory", error });

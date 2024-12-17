@@ -1330,7 +1330,8 @@ export async function getTemplateByTitledraft(req: Request, res: Response) {
         price: true,
         version: true,
         templateType: true,
-        isdraft: true
+        isdraft: true,
+        active:true
       },
     });
 

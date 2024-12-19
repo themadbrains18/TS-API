@@ -27,14 +27,14 @@ interface AuthenticatedRequest extends Request {
  * - If the creation is successful, a `201 Created` status is returned with the newly created template data.
  * - In case of any errors, including validation errors or database issues, a `500 Internal Server Error` status is returned with an appropriate error message.
  */
+
 export async function createTemplate(req: AuthenticatedRequest, res: Response) {
+
   try {
     // Parse and validate request data using DTO schema
-    console.log("hererer", req.body);
     // const validatedData = createTemplateSchema.parse(JSON.parse(req.body.data));
 
-    let creditqwqs = JSON.parse(req.body.credits)
-
+    let creditqwqs = JSON.parse(req.body.credits);
 
     const {
       title, titleinfo, price, description, industry, templateTypeId,
@@ -60,11 +60,10 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       return res.status(400).json({ message: "slug must be unique." });
     }
 
-
     const userId = req.user?.id;
 
     // Validate required fields
-    if (!title || !userId  || !credits || !techDetails) {
+    if (!title || !userId || !credits || !techDetails) {
       return res.status(400).json({ message: 'Title, user ID, SEO tags, credits, and tech details are required.' });
     }
     if (!title) {
@@ -86,7 +85,6 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
     // Check if req.files is an array or an object with named fields
     if (Array.isArray(req.files)) {
       // If req.files is an array, you can't map the fields, so skip this step.
-      console.log("Files uploaded without named fields");
     } else if (req.files) {
       // If req.files is an object, handle each file type
       if (req.files.sliderImages) {
@@ -98,12 +96,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       if (req.files.previewMobileImages) {
         previewMobileImageUrls = await uploadFiles(req.files.previewMobileImages as Express.Multer.File[], 'previewMobileImages');
       }
-      // if (req.files.sourceFiles) {
-      //   sourceFileUrls = await uploadFiles(req.files.sourceFiles as Express.Multer.File[], 'sourceFiles');
-      // }
     }
-
-    console.log(softwareTypeId, "==softwareTypeId");
 
     // Create a new template
     const newTemplate = await prisma.template.create({
@@ -119,6 +112,10 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
         industryName: industryName,
         price: (price != "undefined" && isPaid === "true") ? Number(price) : 0,
         isPaid: (isPaid === "false" ? false : true),
+        metatitle,
+        metadescription,
+        slug,
+        isdraft: false,
         seoTags,
         userId,
         sourceFiles,
@@ -140,6 +137,7 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       },
     });
 
+
     // Link images in the related tables
     await Promise.all([
       ...sliderImageUrls.map(url => prisma.sliderImage.create({ data: { imageUrl: url, templateId: newTemplate.id } })),
@@ -148,7 +146,10 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
       // ...sourceFileUrls.map(url => prisma.sourceFile.create({ data: { fileUrl: url, templateId: newTemplate.id } })),
     ]);
 
-    return res.status(201).json({ message: 'Template created successfully', template: newTemplate, });
+    return res.status(201).json({
+      message: 'Template created successfully',
+      template: newTemplate,
+    });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       // Catch and handle validation errors
@@ -174,7 +175,6 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response) {
  */
 export async function deleteTemplate(req: AuthenticatedRequest, res: Response) {
   const { id } = req.params;
-
 
   try {
     const template = await prisma.template.findUnique({ where: { id } });
@@ -277,7 +277,6 @@ export async function getTemplates(req: Request, res: Response) {
 
       const priceConditions = ranges.map((range: string) => {
         const [minPrice, maxPrice] = range.split('-').map((p) => parseFloat(p));
-        console.log(minPrice, maxPrice, "minPrice, maxPrice");
 
         // Handle "200-more" condition explicitly
         if (isNaN(maxPrice)) {
@@ -329,7 +328,15 @@ export async function getTemplates(req: Request, res: Response) {
       prisma.template.findMany({
 
         where: {
-          isdraft: false, // Ensure only non-draft templates are counted
+          // isdraft: false, // Ensure only non-draft templates are counted
+          AND: [
+            {
+              isdraft: false
+            },
+            {
+              active: true
+            }
+          ],
           ...filters,
           ...(templateTypeId ? { templateTypeId: { in: handleArrayInput(templateTypeId) } } : {}),
           ...(subCatId ? subCategoryFilter : {}),
@@ -358,7 +365,16 @@ export async function getTemplates(req: Request, res: Response) {
       }),
       prisma.template.count({
         where: {
-          isdraft: false, // Ensure only non-draft templates are counted
+          // isdraft: false, // Ensure only non-draft templates are counted
+
+          AND: [
+            {
+              isdraft: false
+            },
+            {
+              active: true
+            }
+          ],
           ...filters,
           ...(templateTypeId ? { templateTypeId: { in: handleArrayInput(templateTypeId) } } : {}),
           ...(subCatId ? subCategoryFilter : {}),
@@ -385,7 +401,6 @@ export async function getTemplates(req: Request, res: Response) {
 }
 
 
-
 /**
  * Fetches the latest templates from the database.
  * 
@@ -399,12 +414,35 @@ export async function getTemplates(req: Request, res: Response) {
  * - If the query is successful, a `200 OK` response is returned with the fetched templates and a success message.
  * - If an error occurs while fetching the templates, a `500 Internal Server Error` response is returned with an error message.
  */
+
 export const getAllTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
+      // where: {
+      //   isdraft: false
+      // },
       where: {
-        isdraft: false
+        AND: [
+          {
+            isdraft: false
+          },
+          {
+            active: true
+          }
+        ]
       },
+
+      // OR: [
+      //   {
+      //     email: {
+      //       endsWith: 'prisma.io',
+      //     },
+      //   },
+      //   { email: { endsWith: 'gmail.com' } },
+      // ],
+
+
+
       select: {
         title: true,
         version: true,
@@ -447,17 +485,23 @@ export const getAllTemplates = async (req: Request, res: Response) => {
  */
 export const featureTemplates = async (req: Request, res: Response) => {
   try {
-    console.log("here");
-
     const featureTemplates = await prisma.template.findMany({
       where: {
-        isdraft: false
+        AND: [
+          {
+            isdraft: false
+          },
+          {
+            active: true
+          }
+        ]
       },
       select: {
         sliderImages: true,
         title: true,
         version: true,
         price: true,
+        slug: true,
         templateType: true,
         id: true,
 
@@ -505,7 +549,14 @@ export const getLatestTemplates = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
       where: {
-        isdraft: false
+        AND: [
+          {
+            isdraft: false
+          },
+          {
+            active: true
+          }
+        ]
       },
       orderBy: {
         createdAt: 'desc',
@@ -611,7 +662,6 @@ export const templateDownloads = async (req: Request, res: Response) => {
 };
 
 
-
 /**
  * Fetches the most popular templates based on the number of downloads.
  * 
@@ -630,7 +680,14 @@ export const getPopularTemplates = async (req: Request, res: Response) => {
   try {
     const popularTemplates = await prisma.template.findMany({
       where: {
-        isdraft: false
+        AND: [
+          {
+            isdraft: false
+          },
+          {
+            active: true
+          }
+        ]
       },
       orderBy: {
         downloads: 'desc',
@@ -651,8 +708,6 @@ export const getPopularTemplates = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Failed to fetch popular templates", error });
   }
 };
-
-
 
 
 /**
@@ -745,6 +800,57 @@ export async function getTemplateById(req: Request, res: Response) {
 }
 
 
+/**
+ * Fetches a template from the database based on the provided slug.
+ *
+ * @async
+ * @function getTemplateByslug
+ * @param {Request} req - The HTTP request object, containing parameters including the slug.
+ * @param {Response} res - The HTTP response object for sending the result or error.
+ * @returns {Promise<Response>} The HTTP response with the fetched template or an error message.
+ *
+ * @throws {Error} Throws an error if the slug is missing or if the template is not found.
+ */
+
+export async function getTemplateByslug(req: Request, res: Response) {
+  const { slug } = req.params;
+
+  if (!slug) {
+    return res.status(400).json({ message: 'Slug is required.' });
+  }
+
+  try {
+    const template = await prisma.template.findFirst({
+      where: { slug },
+      include: {
+        credits: true,
+        sliderImages: true,
+        previewImages: true,
+        previewMobileImages: true,
+        softwareType: true,
+        user: {
+          select: {
+            name: true,
+            id: true,
+            authortitle: true,
+            authordesscription: true
+
+          }
+        }
+      },
+    });
+
+    if (!template) {
+      throw new Error('Template not found.');
+    }
+
+    return res.status(200).json(template);
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Failed to fetch template', error: error.message });
+  }
+}
+
+
 
 /**
  * Fetches templates based on a search query and optional subcategory filter.
@@ -768,27 +874,33 @@ export async function getTemplateByTitle(req: Request, res: Response) {
   try {
     const results = await prisma.template.findMany({
       where: {
-        isdraft: false,
         AND: [
+          {
+            isdraft: false
+          },
+          {
+            active: true
+          },
           query
             ? {
-                OR: [
-                  { title: { contains: query} }, // Search in title
-                  { seoTags: { array_contains: query } }, // Search in seoTags
-                ],
-              }
+              OR: [
+                { title: { contains: query } }, // Search in title
+                { seoTags: { array_contains: query } }, // Search in seoTags
+              ],
+            }
             : {}, // If no query, ignore this filter
           subCategoryId ? { subCategoryId } : {}, // Apply subCategoryId filter if valid
         ],
       },
       select: {
         id: true,
+        slug: true,
         title: true,
         description: true,
         imageUrl: true,
         price: true,
-        version:true,
-        templateType:true
+        version: true,
+        templateType: true
       },
     });
 
@@ -798,7 +910,6 @@ export async function getTemplateByTitle(req: Request, res: Response) {
     res.status(500).json({ message: 'Error searching templates' });
   }
 }
-
 
 
 /**
@@ -849,9 +960,6 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       throw new Error('Template not found.');
     }
 
-
-
-
     // Check user ownership
     // if (existingTemplate.userId !== req.user?.id) {
     //   throw new Error('You are not authorized to update this template.');
@@ -899,9 +1007,9 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
     // let sourceFileUrls: string[] = [];
 
 
+
     // Check if req.files is an array or an object with named fields
     if (Array.isArray(req.files)) {
-      console.log("Files uploaded without named fields");
     } else if (req.files) {
       if (req.files.sliderImages) {
         sliderImageUrls = await uploadFiles(req.files.sliderImages as Express.Multer.File[], 'sliderImages');
@@ -917,8 +1025,7 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
       // }
     }
 
-    console.log(industryName,"==industryName");
-    
+
 
     const result = await prisma.$transaction(async (prisma) => {
 
@@ -937,6 +1044,10 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
           price: (price !== "undefined" && isPaid === "true") ? Number(price) : 0,
           isPaid: isPaid === "true",
           seoTags,
+          isdraft: false,
+          metatitle,
+          metadescription,
+          slug,
           techDetails,
           sourceFiles,
           credits: {
@@ -955,8 +1066,6 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
         },
         include: { credits: true },
       });
-
-
 
       // Conditionally delete and recreate images if new ones are uploaded
       if (sliderImageUrls.length) {
@@ -988,6 +1097,19 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response) {
 }
 
 
+
+/**
+ * Retrieves all templates from the database for the dashboard.
+ * 
+ * This function fetches templates in descending order of creation date and 
+ * includes specific fields such as title, version, price, template type, and more.
+ * 
+ * @async
+ * @function getAllTemplatesdashboard
+ * @param {Request} req - The HTTP request object.
+ * @param {Response} res - The HTTP response object.
+ * @returns {Promise<void>} Sends a JSON response containing the list of templates or an error message.
+ */
 export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
   try {
     const latestTemplates = await prisma.template.findMany({
@@ -1000,7 +1122,8 @@ export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
         slug: true,
         metatitle: true,
         metadescription: true,
-        isdraft: true
+        isdraft: true,
+        active: true
       },
       orderBy: {
         createdAt: 'desc',
@@ -1015,15 +1138,19 @@ export const getAllTemplatesdashboard = async (req: Request, res: Response) => {
 };
 
 
-
-
-
-
-
-
-
-// draftemplatedraftemplate draftemplate draftemplate draftemplate 
-// draftemplatedraftemplate draftemplate draftemplate draftemplate 
+/**
+ * Handles the creation or update of a template draft.
+ * 
+ * This function processes the provided request data, validates required fields,
+ * uploads associated files (if any), and uses Prisma's `upsert` to create or update
+ * the template record in the database. It also links uploaded images to the relevant template.
+ * 
+ * @async
+ * @function draftemplate
+ * @param {AuthenticatedRequest} req - The authenticated HTTP request object containing template details and files.
+ * @param {Response} res - The HTTP response object to send the response.
+ * @returns {Promise<void>} Sends a JSON response indicating success or failure of the operation.
+ */
 
 export async function draftemplate(req: AuthenticatedRequest, res: Response) {
   try {
@@ -1163,7 +1290,19 @@ export async function draftemplate(req: AuthenticatedRequest, res: Response) {
 }
 
 
-//  draft search template 
+/**
+ * Fetch templates by title or draft status based on query parameters.
+ *
+ * @param {Request} req - The HTTP request object. 
+ *    - `req.query.query` (string, optional): Search term for template titles or SEO tags.
+ *    - `req.query.subCategoryId` (string, optional): Filter templates by sub-category ID.
+ * @param {Response} res - The HTTP response object.
+ *
+ * @returns {Promise<void>} Sends a JSON response with the matched templates or an error message.
+ *
+ * @throws {Error} Returns a 500 status code if an error occurs during the database query.
+ */
+
 export async function getTemplateByTitledraft(req: Request, res: Response) {
   const query = typeof req.query.query === 'string' ? req.query.query : undefined;
   const subCategoryId = typeof req.query.subCategoryId === 'string' ? req.query.subCategoryId : undefined;
@@ -1191,7 +1330,8 @@ export async function getTemplateByTitledraft(req: Request, res: Response) {
         price: true,
         version: true,
         templateType: true,
-        isdraft : true
+        isdraft: true,
+        active:true
       },
     });
 
@@ -1201,3 +1341,76 @@ export async function getTemplateByTitledraft(req: Request, res: Response) {
     res.status(500).json({ message: 'Error searching templates' });
   }
 }
+
+
+/**
+ * Deletes all templates from the database.
+ *
+ * @async
+ * @function deleteAllTemplate
+ * @param {AuthenticatedRequest} req - The authenticated HTTP request object. No additional parameters are required.
+ * @param {Response} res - The HTTP response object used to send the result or an error message.
+ * @returns {Promise<Response>} The HTTP response confirming the deletion of all templates or an error message.
+ *
+ * @description
+ * This function removes all entries in the `template` table using Prisma's `deleteMany` method.
+ * If successful, it returns a success message with a 200 status code.
+ * If the operation fails, an error is logged, and a 500 status code is returned.
+ *
+ * @throws {Error} Logs the error and returns a 500 response if the operation fails.
+ */
+
+export async function deleteAllTemplate(req: AuthenticatedRequest, res: Response) {
+  try {
+    const template = await prisma.template.deleteMany();
+    res.status(200).json({
+      message: ' Delete All Template Successfully',
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Failed to delete all template', error: error.message });
+  }
+}
+
+
+  
+/**
+ * Update the active status of a template.
+ *
+ * @param {AuthenticatedRequest} req - The authenticated HTTP request object.
+ *    - `req.params.id` (string): The ID of the template to update.
+ *    - `req.body.active` (boolean): The new active status for the template.
+ * @param {Response} res - The HTTP response object.
+ *
+ * @returns {Promise<void>} Sends a JSON response with the updated template or an error message.
+ *
+ * @throws {Error} Returns a 500 status code if an error occurs during the database operation.
+ */export const updateActiveStatus = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params; // Get the template ID from route parameters
+    const { active } = req.body; // Get the new active status from the request body
+
+    // Check if the template exists
+    const template = await prisma.template.findUnique({
+      where: { id },
+    });
+
+    if (!template) {
+      return res.status(404).json({ message: 'Template not found' });
+    }
+
+    // Update the active status
+    const updatedTemplate = await prisma.template.update({
+      where: { id },
+      data: { active: active },
+    });
+
+    return res.status(200).json({
+      message: 'Template active status updated successfully',
+      template: updatedTemplate,
+    });
+
+  } catch (error) {
+    console.error('Error updating active status:', error);
+    return res.status(500).json({ message: 'Internal server error', error });
+  }
+};

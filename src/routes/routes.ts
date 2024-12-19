@@ -4,7 +4,7 @@ import { validateData } from '../middlewares/zodValidationMiddleware';
 import { userLoginSchema, userSignUpSchema } from '../dto/user.dto';
 
 import { register, login, logout, forgetPassword, resetPasswordWithOtp, verifyOtp, resendOtp, checkUser, updateUserDetails, updateUserImage, getUserDownloads, removeUserImage, deleteUser, getFreeDownload } from '../controllers/authController';
-import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, featureTemplates, getTemplateByTitle, draftemplate, getAllTemplatesdashboard, getTemplateByTitledraft, } from '../controllers/templateController';
+import { createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate, getAllTemplatesByUserId, getLatestTemplates, getPopularTemplates, templateDownloads, getAllTemplates, featureTemplates, getTemplateByTitle, draftemplate, getAllTemplatesdashboard, getTemplateByTitledraft, deleteAllTemplate, getTemplateByslug, updateActiveStatus, } from '../controllers/templateController';
 import { createCredit, getCredits, updateCredit, deleteCredit, } from '../controllers/creditController';
 // import { createTechnicalDetail, getTechnicalDetails, updateTechnicalDetail, deleteTechnicalDetail, } from '../controllers/technicalDetailController';
 import { authenticateToken } from '../middlewares/authMiddleware';
@@ -20,9 +20,13 @@ import { deleteAllMediaPreviewImage, deleteAllMediaPreviewMobileImage, deleteAll
  */
 const router = Router();
 
+
+
 /**
  * Authentication routes
  */
+
+
 router.post('/register', validateData(userSignUpSchema), register); // Register a new user with validation
 router.post('/login', validateData(userLoginSchema), login); // Log in an existing user with validation
 router.post('/verify-otp', verifyOtp); // Verify OTP for user authentication
@@ -60,8 +64,10 @@ router.get('/templateswithdraft/search', getTemplateByTitledraft);
 router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken, updateTemplate); // Update a specific template by ID
 router.delete('/templates/:id', authenticateToken, deleteTemplate); // Delete a specific template by ID
 router.delete('/deletealltemplates/', authenticateToken, deleteAllTemplate); // Delete a specific template by ID
-router.post('/templatestatus/:id',  updateActiveStatus); // change status template id active-inactive
-// dash board
+
+router.post('/templatestatus/:id',  updateActiveStatus); // change status template id active-inactive 
+
+// dash board  
 router.get('/all-templatesdashboard', getAllTemplatesdashboard);
 /**
  * Template Type routes
@@ -75,6 +81,7 @@ router.delete('/template-types/:id', authenticateToken, deleteTemplateType); // 
 /**
  * Sub Categories routes
  */
+
 router.post('/sub-categories', authenticateToken, createSubCategory); // Create a subcategory
 router.get('/sub-categories', getSubCategories); // Get all subcategories
 router.get('/sub-categories/:id', getSubCategoryById); // Get a subcategory by Template ID
@@ -84,6 +91,7 @@ router.delete('/sub-categories/:id', authenticateToken, deleteSubCategory); // D
 /**
  * Software-types Route definitions
  */
+
 router.post('/software-types', authenticateToken, createSoftwareType); // Create a new software type
 router.get('/software-types', getSoftwareTypes); // Get all software types
 router.get('/software-types/:id', getSoftwareTypeById); // Get a software type by Template ID

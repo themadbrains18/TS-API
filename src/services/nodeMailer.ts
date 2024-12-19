@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import FileTemplate from '../email-template/fileTemplate';
-
+import Otptemplate from '../email-template/otpTemplate';
 /*
  * Configures a Nodemailer transporter for sending emails.
  * 
@@ -39,13 +39,18 @@ const transporter = nodemailer.createTransport({
  * 2. Uses the configured Nodemailer transporter to send the email with the specified options.
  */
 
+
+
 export async function sendOtpEmail(email: string, otp: string): Promise<void> {
+  
+const otptemp = Otptemplate(email , otp)
   // Setting up mail options, including the recipient email and message body
   const mailOptions = {
     from: process.env.SMTP_USERNAME, // Sender email address
     to: email, // Recipient email address
     subject: 'Your OTP Code', // Email subject
     text: `Your OTP code is: ${otp}. It is valid for 3 minutes.`, // Plain text email content
+    html: otptemp.html
   };
 
   // Sending the OTP email
@@ -75,9 +80,9 @@ export async function sendOtpEmail(email: string, otp: string): Promise<void> {
  */
 
 export async function sendTemplateEmail(
-  email: string, 
-  url: string, 
-  templateName: string, 
+  email: string,
+  url: string,
+  templateName: string,
   name: string | ""
 ): Promise<void> {
   // Generate the HTML email template using the provided URL, template name, and recipient's name

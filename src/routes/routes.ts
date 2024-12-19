@@ -43,29 +43,29 @@ router.delete('/user/remove-image', authenticateToken, removeUserImage); // Remo
 /**
  * Template routes
  */
-
 router.post('/templates', authenticateToken, uploadFiles, multerErrorHandler, createTemplate); // Create a new template (with file upload)
+router.post('/draftemplate', authenticateToken, uploadFiles, multerErrorHandler, draftemplate); // Create a new template (with file upload)
 router.post('/templates/:id/download', templateDownloads); // record a download for a template
 router.get('/templates', getTemplates); // Get all templates by pagination
 router.get('/all-templates', getAllTemplates); // Get all templates by pagination
-router.get('/feature-templates', featureTemplates); // Get Feature Templates take 6 
+router.get('/feature-templates', featureTemplates); // Get Feature Templates take 6
 router.get('/templates/latest', getLatestTemplates); // Get Latest templates
 router.get('/templates/popular', getPopularTemplates); // Get Popular templates
 router.get('/dashboard/templates-by-userid', authenticateToken, getAllTemplatesByUserId); // Get all templates by UserID
 router.get('/templates-by-userid/:id', getAllTemplatesByUserId); // Get all templates by UserID
 router.get('/templates-by-id/:id', getTemplateById); // Get a specific template by ID
+router.get('/templates-by-slug/:slug', getTemplateByslug); // Get a specific template by slug
 router.get('/templates/search', getTemplateByTitle); // Get a specific template by ID
 router.get('/templateswithdraft/search', getTemplateByTitledraft);
 router.put('/templates/:id', uploadFiles, multerErrorHandler, authenticateToken, updateTemplate); // Update a specific template by ID
 router.delete('/templates/:id', authenticateToken, deleteTemplate); // Delete a specific template by ID
-
-// dash board  
+router.delete('/deletealltemplates/', authenticateToken, deleteAllTemplate); // Delete a specific template by ID
+router.post('/templatestatus/:id',  updateActiveStatus); // change status template id active-inactive
+// dash board
 router.get('/all-templatesdashboard', getAllTemplatesdashboard);
-
 /**
  * Template Type routes
  */
-
 router.post('/template-types', authenticateToken, createTemplateType); // Create a new TemplateType
 router.get('/template-types', getTemplateTypes); // Get all TemplateTypes
 router.get('/template-types/:id', getTemplateTypeById); // Get TemplateType by ID

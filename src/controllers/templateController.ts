@@ -1163,18 +1163,6 @@ export async function draftemplate(req: AuthenticatedRequest, res: Response) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 //  draft search template 
 export async function getTemplateByTitledraft(req: Request, res: Response) {
   const query = typeof req.query.query === 'string' ? req.query.query : undefined;
